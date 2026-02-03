@@ -5,6 +5,7 @@ import NextTopLoader from "nextjs-toploader";
 import { Toaster } from "sonner";
 import MobileMenu from "@/components/mobile-menu";
 import MusicProvider from "@/components/providers/music-provider";
+import NextProvider from "@/components/providers/next-provider";
 
 const bricolage_grotesque = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -43,7 +44,9 @@ export default function RootLayout({ children }) {
             zIndex={1600}
             showAtBottom={false}
           />
-          <MusicProvider>{children}</MusicProvider>
+          <NextProvider>
+            <MusicProvider>{children}</MusicProvider>
+          </NextProvider>
           {/* <MobileMenu/> */}
           <Toaster position="top-center" visibleToasts={1} />
         </ThemeProvider>

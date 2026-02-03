@@ -5,3 +5,4 @@ export const NextContext = createContext(null);
 
 export const useMusicProvider = () => useContext(MusicContext);
 export const useNextMusicProvider = () => useContext(NextContext);
+

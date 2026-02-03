@@ -5,10 +5,16 @@ import { Button } from "../ui/button";
 import Search from "./search";
 import { ChevronDown, ChevronLeft, Share2 } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useMusicProvider } from "@/hooks/use-context";
 import Link from "next/link";
+import { useMediaQuery } from "@/hooks/use-media-query";
 
 export default function Header() {
     const path = usePathname();
+    const { playerOpen } = useMusicProvider();
+    const isDesktop = useMediaQuery("(min-width: 1024px)");
+    // Hide header only when the player is fullscreen (mobile/tablet).
+    if (playerOpen && !isDesktop) return null;
     return (
         <header className="grid gap-2 pt-5 px-5 pb-5 md:px-20 lg:px-32">
             <div className="flex items-center sm:justify-between w-full gap-2">

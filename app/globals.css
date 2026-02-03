@@ -63,37 +63,45 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground select-none;
   }
-  ::-webkit-scrollbar{
+
+  ::-webkit-scrollbar {
     @apply w-0 h-0;
   }
-  ::-webkit-scrollbar-track{
+
+  ::-webkit-scrollbar-track {
     @apply bg-transparent;
   }
-  .blurz{
+
+  .blurz {
     animation: blur .7s forwards;
   }
 
   @keyframes blur {
-    0%{
+    0% {
       filter: blur(5px);
     }
-    20%{
-      filter: blur(5px);
-    }
-    40%{
-      filter: blur(5px);
-    }
-    60%{
-      filter: blur(5px);
-    }
-    80%{
-      filter: blur(5px);
-    }
-    100%{
+
+    100% {
       filter: blur(0);
     }
+  }
+
+
+  @keyframes wave-move {
+    from {
+      mask-position: 0 0;
+    }
+
+    to {
+      mask-position: var(--wave-width) 0;
+    }
+  }
+
+  .wavy-range-static::after {
+    animation-play-state: paused;
   }
 }

@@ -5,7 +5,7 @@ import Next from "@/components/cards/next";
 import SongCard from "@/components/cards/song";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useNextMusicProvider } from "@/hooks/use-context";
+import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
 import { getSongsSuggestions } from "@/lib/fetch";
 import { useContext, useEffect, useState } from "react";
 
@@ -13,32 +13,38 @@ export default function Recomandation({ id }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
   const next = useNextMusicProvider();
+  const { setQueue } = useMusicProvider();
 
-  const getData = async () => {
-    await getSongsSuggestions(id)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data) {
+  useEffect(() => {
+    const getData = async () => {
+      if (data.length === 0) setLoading(true); // Only show loading skeletons if no data exists
+      try {
+        const res = await getSongsSuggestions(id);
+        const data = await res.json();
+        if (data && data.data.length > 0) {
           setData(data.data);
-          let d = data.data[Math.floor(Math.random() * data?.data?.length)];
+          setQueue(data.data); // Set the full recommendation list as the queue
+          let d = data.data[0]; // Always pick the first one for stability
           next.setNextData({
             id: d.id,
             name: d.name,
             artist: d.artists.primary[0]?.name || "unknown",
-            album: d.album.name,
+            album: d.album?.name || "unknown",
             image: d.image[1].url,
           });
         } else {
           setData(false);
         }
-      })
-      .finally(() => {
+      } catch (error) {
+        console.error("Failed to fetch recommendations:", error);
+      } finally {
         setLoading(false);
-      });
-  };
-  useEffect(() => {
+      }
+    };
+
+    setData([]); // Clear old data to show skeletons
     getData();
-  }, []);
+  }, [id]);
   return (
     <section className="py-10 px-6 md:px-20 lg:px-32">
       <div>
