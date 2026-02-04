@@ -116,8 +116,6 @@ export default function SidebarPlayer() {
     container.scrollBy({ top: offset, behavior: "auto" });
   }, [activeLine]);
 
-  if (!music) return null;
-
   return (
     <div className="h-full w-full flex flex-col">
       <div className="p-5 border-b border-border/60">
@@ -150,7 +148,11 @@ export default function SidebarPlayer() {
         <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
           Lyrics
         </div>
-        {isLyricsLoading ? (
+        {!music ? (
+          <div className="mt-4 text-sm text-muted-foreground">
+            Pick a song to see lyrics here.
+          </div>
+        ) : isLyricsLoading ? (
           <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
             Fetching lyrics...
@@ -187,4 +189,3 @@ export default function SidebarPlayer() {
     </div>
   );
 }
-

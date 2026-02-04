@@ -18,7 +18,6 @@ import { toast } from "sonner";
 import { Skeleton } from "../ui/skeleton";
 import { IoPause } from "react-icons/io5";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import FullPlayer from "@/components/player/full-player";
 import SidebarPlayer from "@/components/player/sidebar-player";
 import { useMediaQuery } from "@/hooks/use-media-query";
@@ -270,8 +269,15 @@ export default function Player() {
 
   return (
     <>
+      {/* Desktop: dock a permanent right sidebar (Spotify-like) */}
+      {isDesktop && (
+        <aside className="hidden lg:block fixed right-0 top-0 h-screen w-[360px] border-l border-border bg-background z-[90]">
+          <SidebarPlayer />
+        </aside>
+      )}
+
       {(!playerOpen || isDesktop) && (
-      <div className="fixed bottom-0 left-0 right-0 z-[100] bg-background/95 backdrop-blur-md border-t border-border shadow-2xl h-[72px] sm:h-24 flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 lg:right-[360px] z-[100] bg-background/95 backdrop-blur-md border-t border-border shadow-2xl h-[72px] sm:h-24 flex flex-col">
         <div className="absolute top-0 left-0 right-0 -translate-y-[2px] px-0">
           <Slider
             thumbClassName="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -439,13 +445,7 @@ export default function Player() {
         onPause={() => setPlaying(false)}
         onLoadedData={() => setDuration(audioRef.current?.duration || 0)}
       />
-      {isDesktop ? (
-        <Sheet open={playerOpen} onOpenChange={setPlayerOpen}>
-          <SheetContent side="right" className="p-0 w-[360px] max-w-[90vw]">
-            <SidebarPlayer />
-          </SheetContent>
-        </Sheet>
-      ) : (
+      {!isDesktop && (
         <Dialog open={playerOpen} onOpenChange={setPlayerOpen}>
           <DialogContent className="w-[100vw] h-[100vh] max-w-none rounded-none overflow-y-auto p-0 bg-background">
             <div className="relative pt-14 sm:pt-6">

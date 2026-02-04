@@ -45,7 +45,9 @@ export default function RootLayout({ children }) {
             showAtBottom={false}
           />
           <NextProvider>
-            <MusicProvider>{children}</MusicProvider>
+            <MusicProvider>
+              <div className="lg:pr-[360px]">{children}</div>
+            </MusicProvider>
           </NextProvider>
           {/* <MobileMenu/> */}
           <Toaster position="top-center" visibleToasts={1} />
