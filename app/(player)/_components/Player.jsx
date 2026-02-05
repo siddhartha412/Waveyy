@@ -15,6 +15,7 @@ import {
 } from "@/hooks/use-context";
 import Next from "@/components/cards/next";
 import { IoPause } from "react-icons/io5";
+import { decodeHTML } from "@/lib/decode-html";
 
 export default function Player({ id }) {
   const [data, setData] = useState([]);
@@ -161,6 +162,38 @@ export default function Player({ id }) {
     if (isLooping || duration === 0) return;
     return handleRedirect();
   }, [currentTime, duration, isLooping, next?.nextData?.id]);
+
+  // MediaSession API implementation
+  useEffect(() => {
+    if ("mediaSession" in navigator && data?.name) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: decodeHTML(data.name || ""),
+        artist: decodeHTML(data.artists?.primary?.[0]?.name || ""),
+        album: decodeHTML(data.album?.name || "Waveyy"),
+        artwork: [
+          { src: data.image?.[2]?.url || "", sizes: "500x500", type: "image/jpeg" },
+          { src: data.image?.[1]?.url || "", sizes: "150x150", type: "image/jpeg" },
+        ],
+      });
+
+      navigator.mediaSession.setActionHandler("play", () => {
+        setPlaying(true);
+        audioRef.current?.play();
+      });
+      navigator.mediaSession.setActionHandler("pause", () => {
+        setPlaying(false);
+        audioRef.current?.pause();
+      });
+
+      if (next?.nextData?.id) {
+        navigator.mediaSession.setActionHandler("nexttrack", () => {
+          window.location.href = `https://${window.location.host}/${next.nextData.id}`;
+        });
+      } else {
+        navigator.mediaSession.setActionHandler("nexttrack", null);
+      }
+    }
+  }, [data, next?.nextData?.id]);
   return (
     <div className="mb-3 mt-10">
       <audio
