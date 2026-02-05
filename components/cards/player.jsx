@@ -10,22 +10,28 @@ import {
   SkipBack,
   SkipForward,
   X,
+  MonitorPlay,
 } from "lucide-react";
 import { Slider } from "../ui/slider";
 import { getSongsById, getSongsSuggestions } from "@/lib/fetch";
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
-import { toast } from "sonner";
 import { Skeleton } from "../ui/skeleton";
 import { IoPause } from "react-icons/io5";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import FullPlayer from "@/components/player/full-player";
 import SidebarPlayer from "@/components/player/sidebar-player";
+import { decodeHTML } from "@/lib/decode-html";
 import { useMediaQuery } from "@/hooks/use-media-query";
+import { useRef } from "react";
+import { toast } from "sonner";
 
 export default function Player() {
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState(null);
   const [isLooping, setIsLooping] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [tvOpen, setTvOpen] = useState(false);
+  const closeTimerRef = useRef(null);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const {
     music,
@@ -55,6 +61,89 @@ export default function Player() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (music) setIsClosing(false);
+  }, [music]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const root = document.documentElement;
+    if (tvOpen) root.classList.add("tv-mode");
+    else root.classList.remove("tv-mode");
+    return () => root.classList.remove("tv-mode");
+  }, [tvOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!music) {
+      setData(null);
+      setAudioURL("");
+      setPlaying(false);
+      setCurrentTime(0);
+      setDuration(0);
+      setTvOpen(false);
+    }
+  }, [music, setAudioURL, setPlaying, setCurrentTime, setDuration]);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!tvOpen && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
+    }
+  }, [tvOpen]);
+
+  const finalizeClosePlayer = () => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+    setPlaying(false);
+    setMusic(null);
+    setCurrent(0);
+    setCurrentTime(0);
+    setDuration(0);
+    setAudioURL("");
+    setData(null);
+    setPlayRequested(false);
+    localStorage.removeItem("last-played");
+  };
+
+  const handleClosePlayer = () => {
+    if (isDesktop) {
+      setIsClosing(true);
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = setTimeout(() => {
+        finalizeClosePlayer();
+        setIsClosing(false);
+      }, 280);
+      return;
+    }
+    finalizeClosePlayer();
+  };
+
+  const handleOpenTv = async () => {
+    if (typeof document === "undefined") {
+      setTvOpen(true);
+      return;
+    }
+    const root = document.documentElement;
+    if (!root.requestFullscreen) {
+      setTvOpen(true);
+      return;
+    }
+    try {
+      await root.requestFullscreen();
+      setTvOpen(true);
+    } catch {
+      toast.error("Fullscreen is blocked by your browser.");
+    }
+  };
 
   const getSong = async () => {
     if (!music) return;
@@ -266,17 +355,23 @@ export default function Player() {
   }, [audioURL, playRequested, playing, setPlayRequested, setPlaying]);
 
   if (!mounted || !music) return null;
+  const safeTitle = decodeHTML(data?.name || "");
+  const safeArtist = decodeHTML(data?.artists?.primary?.[0]?.name || "");
 
   return (
     <>
       {/* Desktop: dock a permanent right sidebar (Spotify-like) */}
-      {isDesktop && (
-        <aside className="hidden lg:block fixed right-0 top-0 h-screen w-[360px] border-l border-border bg-background z-[90]">
+      {isDesktop && !tvOpen && (
+        <aside
+          className={`hidden lg:block fixed right-0 top-0 h-screen w-[360px] border-l border-border bg-background z-[90] transition-transform duration-300 ${
+            isClosing ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
+          }`}
+        >
           <SidebarPlayer />
         </aside>
       )}
 
-      {(!playerOpen || isDesktop) && (
+      {(!playerOpen || isDesktop) && !tvOpen && (
       <div className="fixed bottom-0 left-0 right-0 lg:right-[360px] z-[100] bg-background/95 backdrop-blur-md border-t border-border shadow-2xl h-[72px] sm:h-24 flex flex-col">
         <div className="absolute top-0 left-0 right-0 -translate-y-[2px] px-0">
           <Slider
@@ -306,10 +401,10 @@ export default function Player() {
                     onClick={() => setPlayerOpen(true)}
                     className="text-left text-sm font-semibold truncate block hover:text-primary transition"
                   >
-                    {data.name}
+                    {safeTitle}
                   </button>
                   <p className="text-xs text-muted-foreground truncate">
-                    {data.artists?.primary?.[0]?.name}
+                    {safeArtist}
                   </p>
                 </div>
               </>
@@ -398,6 +493,15 @@ export default function Player() {
             <Button
               size="icon"
               variant="ghost"
+              onClick={handleOpenTv}
+              className="h-9 w-9 text-muted-foreground hover:text-foreground hidden lg:inline-flex"
+              title="Full Screen Mode"
+            >
+              <MonitorPlay className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
               onClick={() => {
                 setIsLooping(!isLooping);
                 if (audioRef.current) audioRef.current.loop = !isLooping;
@@ -409,11 +513,7 @@ export default function Player() {
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => {
-                setMusic(null);
-                setCurrent(0);
-                localStorage.removeItem("last-played");
-              }}
+              onClick={handleClosePlayer}
               className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors ml-2"
             >
               <X className="h-5 w-5" />
@@ -423,11 +523,7 @@ export default function Player() {
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => {
-                setMusic(null);
-                setCurrent(0);
-                localStorage.removeItem("last-played");
-              }}
+              onClick={handleClosePlayer}
               className="h-9 w-9 text-muted-foreground hover:text-destructive transition-colors"
             >
               <X className="h-5 w-5" />
@@ -461,6 +557,25 @@ export default function Player() {
               </Button>
               <FullPlayer id={music} mode="overlay" onClose={() => setPlayerOpen(false)} />
             </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {isDesktop && (
+        <Dialog open={tvOpen} onOpenChange={setTvOpen}>
+          <DialogContent className="w-[100vw] h-[100vh] max-w-none rounded-none overflow-hidden p-0 bg-black">
+            <FullPlayer
+              id={music}
+              mode="tv"
+              onClose={async () => {
+                if (typeof document !== "undefined" && document.fullscreenElement) {
+                  try {
+                    await document.exitFullscreen();
+                  } catch {}
+                }
+                setTvOpen(false);
+              }}
+            />
           </DialogContent>
         </Dialog>
       )}

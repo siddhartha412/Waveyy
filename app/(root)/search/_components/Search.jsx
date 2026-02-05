@@ -15,15 +15,23 @@ export default function Search({ params }) {
     const [albums, setAlbums] = useState([]);
 
     const getSongs = async () => {
-        const get = await getSongsByQuery(query);
+        const get = await getSongsByQuery(query, 20);
         const data = await get.json();
-        setSongs(data.data.results);
-        setArtists(data.data.results)
+
+        const results = data.data.results || [];
+        const uniqueSongs = results.filter((song, index, self) =>
+            index === self.findIndex((s) => (
+                s.id === song.id || (s.name === song.name && s.artists.primary[0]?.name === song.artists.primary[0]?.name)
+            ))
+        );
+
+        setSongs(uniqueSongs);
+        setArtists(uniqueSongs);
     };
     const getAlbum = async () => {
         const get = await searchAlbumByQuery(query);
         const data = await get.json();
-        setAlbums(data.data.results);
+        setAlbums(data?.data?.results || []);
     };
     useEffect(() => {
         getSongs();
@@ -31,7 +39,7 @@ export default function Search({ params }) {
     }, [params.id]);
 
     return (
-        <div className="py-12 -mt-9 px-6 md:px-20 lg:px-32">
+        <div className="py-12 px-6 md:px-20 lg:px-32">
             <div className="grid gap-4">
                 <div className="mt-2">
                     <h1 className="text-base">Search Results</h1>
@@ -40,7 +48,7 @@ export default function Search({ params }) {
                 <ScrollArea>
                     <div className="flex gap-4">
                         {songs.length ? songs.map((song) => (
-                            <SongCard key={song.id} id={song.id} image={song.image[2].url} artist={song.artists.primary[0]?.name || "unknown"} title={song.name} />
+                            <SongCard key={song.id} id={song.id} image={song.image[2].url} artist={song.artists.primary[0]?.name || "unknown"} title={song.name} playCount={song.playCount} />
                         )) : (
                             <>
                                 <SongCard />
@@ -82,9 +90,18 @@ export default function Search({ params }) {
                 <ScrollArea>
                     {artists.length > 0 ? (
                         <div className="flex gap-4">
-                            {[...new Set(artists.map(a => a.artists.primary[0]?.id))].map(id => (
-                                <ArtistCard key={id} id={id} image={artists.find(a => a.artists.primary[0]?.id === id).artists.primary[0]?.image[2]?.url || `https://az-avatar.vercel.app/api/avatar/?bgColor=0f0f0f0&fontSize=60&text=${artists.find(a => a.artists.primary[0]?.id === id).artists.primary[0]?.name.split("")[0].toUpperCase() || "U"}`} name={artists.find(a => a.artists.primary[0]?.id === id).artists?.primary[0]?.name || "unknown"} />
-                            ))}
+                            {[...new Set(artists.map(a => a.artists.primary[0]?.id).filter(Boolean))].map(id => {
+                                const artistData = artists.find(a => a.artists.primary[0]?.id === id);
+                                const artistInfo = artistData?.artists?.primary[0];
+                                return (
+                                    <ArtistCard
+                                        key={id}
+                                        id={id}
+                                        image={artistInfo?.image?.[2]?.url || `https://az-avatar.vercel.app/api/avatar/?bgColor=0f0f0f0&fontSize=60&text=${artistInfo?.name?.charAt(0).toUpperCase() || "U"}`}
+                                        name={artistInfo?.name || "unknown"}
+                                    />
+                                );
+                            })}
                         </div>
                     ) : (
                         <div className="flex gap-3">

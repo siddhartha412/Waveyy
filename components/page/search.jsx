@@ -5,6 +5,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { SearchIcon, Music, X } from "lucide-react";
 import { getSongsByQuery } from "@/lib/fetch";
+import { decodeHTML } from "@/lib/decode-html";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "../ui/skeleton";
 import { useMusicProvider } from "@/hooks/use-context";
@@ -125,6 +126,10 @@ export default function Search() {
                             ))
                         ) : results.length > 0 ? (
                             results.map((song) => (
+                                (() => {
+                                    const safeTitle = decodeHTML(song?.name || "");
+                                    const safeArtist = decodeHTML(song?.artists?.primary?.[0]?.name || "");
+                                    return (
                                 <button
                                     key={song.id}
                                     onClick={() => handleResultClick(song.id)}
@@ -138,17 +143,19 @@ export default function Search() {
                                         />
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium truncate">{song.name}</p>
+                                        <p className="text-sm font-medium truncate">{safeTitle}</p>
                                         <p className="text-xs text-muted-foreground truncate">
-                                            {song.artists?.primary?.[0]?.name}
+                                            {safeArtist}
                                         </p>
                                     </div>
                                     <Music className="h-3 w-3 text-muted-foreground/50 mr-2" />
                                 </button>
+                                    );
+                                })()
                             ))
                         ) : query.length >= 2 ? (
                             <div className="py-8 text-center">
-                                <p className="text-sm text-muted-foreground">No results found for "{query}"</p>
+                                <p className="text-sm text-muted-foreground">No results found for "{decodeHTML(query)}"</p>
                             </div>
                         ) : (
                             <div className="py-4 text-center px-4">
@@ -161,7 +168,7 @@ export default function Search() {
                                 onClick={handleSubmit}
                                 className="w-full py-2 mt-1 text-xs font-semibold text-primary hover:bg-primary/5 rounded-lg border-t border-border/50 transition-colors"
                             >
-                                Show all results for "{query}"
+                                Show all results for "{decodeHTML(query)}"
                             </button>
                         )}
                     </div>

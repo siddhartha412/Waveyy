@@ -8,19 +8,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getAlbumById } from "@/lib/fetch";
 import { useEffect, useState } from "react"
 
-export default function Album({ id }) {
-    const [data, setData] = useState([]);
-
-    const getData = async () => {
-        await getAlbumById(id)
-            .then(res => res.json())
-            .then(data => {
-                setData(data.data);
-            });
-    };
-    useEffect(() => {
-        getData();
-    }, []);
+// Removed fetch logic to allow server-side data passing
+export default function Album({ data }) {
+    // const [data, setData] = useState([]); // Removed state
+    // getData removed
+    // useEffect removed
     return (
         <main className="px-6 md:px-20 lg:px-32 py-5">
             {data.image ? (
@@ -37,14 +29,11 @@ export default function Album({ id }) {
                         </div>
                     </div>
                     <div className="mt-12">
-                        <ScrollArea className="rounded-md mt-4">
-                            <div className="flex gap-3">
-                                {data.songs.map((song) => (
-                                    <SongCard key={song.id} image={song.image[2].url} title={song.name} artist={song.artists.primary[0].name} id={song.id} />
-                                ))}
-                            </div>
-                            <ScrollBar orientation="horizontal" className="hidden sm:flex" />
-                        </ScrollArea>
+                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
+                            {data.songs.map((song) => (
+                                <SongCard key={song.id} image={song.image[2].url} title={song.name} artist={song.artists.primary[0].name} id={song.id} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             ) : (

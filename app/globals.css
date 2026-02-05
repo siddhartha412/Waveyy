@@ -68,6 +68,11 @@
     @apply bg-background text-foreground select-none;
   }
 
+  html.tv-mode header,
+  html.tv-mode footer {
+    display: none !important;
+  }
+
   ::-webkit-scrollbar {
     @apply w-0 h-0;
   }

@@ -5,14 +5,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { getSongsById } from "@/lib/fetch";
 import { getLyrics } from "@/lib/lyrics-client";
 import { useMusicProvider } from "@/hooks/use-context";
-
-const decodeHTML = (str = "") => {
-  if (typeof str !== "string") return str;
-  if (typeof window === "undefined") return str;
-  const txt = document.createElement("textarea");
-  txt.innerHTML = str;
-  return txt.value;
-};
+import { decodeHTML } from "@/lib/decode-html";
+import { toHinglish } from "@/lib/hinglish";
 
 const parseLrc = (lrcText = "") => {
   const lines = lrcText.split("\n");
@@ -175,14 +169,14 @@ export default function SidebarPlayer() {
                       : "text-foreground/60"
                   }`}
                 >
-                  {line.text || "…"}
+                  {toHinglish(line.text || "…")}
                 </button>
               ))}
             </div>
           </div>
         ) : (
           <div className="mt-4 text-sm text-foreground/80 whitespace-pre-line">
-            {lyricsText || "Lyrics are not available for this track."}
+            {toHinglish(lyricsText) || "Lyrics are not available for this track."}
           </div>
         )}
       </div>

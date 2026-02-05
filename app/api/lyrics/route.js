@@ -38,7 +38,8 @@ export async function GET(req) {
       track_name: track,
       artist_name: artist,
     });
-    if (album) searchParams.append("album_name", album);
+    // Removing album_name from fallback search to find more results (often album names mismatch)
+    // if (album) searchParams.append("album_name", album);
 
     const searchRes = await fetch(`${baseUrl}/search?${searchParams.toString()}`, {
       cache: "no-store",

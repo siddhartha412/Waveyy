@@ -11,12 +11,12 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 
 export default function Header() {
     const path = usePathname();
-    const { playerOpen } = useMusicProvider();
+    const { playerOpen, music } = useMusicProvider();
     const isDesktop = useMediaQuery("(min-width: 1024px)");
     // Hide header only when the player is fullscreen (mobile/tablet).
     if (playerOpen && !isDesktop) return null;
     return (
-        <header className="grid gap-2 pt-5 px-5 pb-5 md:px-20 lg:px-32">
+        <header className={`grid gap-2 pt-5 px-5 pb-5 md:px-20 lg:px-32 ${music && isDesktop ? "lg:pr-[360px]" : ""}`}>
             <div className="flex items-center sm:justify-between w-full gap-2">
                 {path == "/" ? (
                     <div className="flex items-center gap-1">

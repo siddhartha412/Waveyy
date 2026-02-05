@@ -34,13 +34,10 @@ export default function Player({ id }) {
     const get = await getSongsById(id);
     const data = await get.json();
     setData(data.data[0]);
-    if (data?.data[0]?.downloadUrl[2]?.url) {
-      setAudioURL(data?.data[0]?.downloadUrl[2]?.url);
-    } else if (data?.data[0]?.downloadUrl[1]?.url) {
-      setAudioURL(data?.data[0]?.downloadUrl[1]?.url);
-    } else {
-      setAudioURL(data?.data[0]?.downloadUrl[0]?.url);
-    }
+    const urls = data?.data[0]?.downloadUrl || [];
+    // Prioritize 320kbps (usually last), then fallback downwards
+    const bestUrl = urls[urls.length - 1]?.url || urls[2]?.url || urls[0]?.url;
+    setAudioURL(bestUrl);
   };
 
   const formatTime = (time) => {

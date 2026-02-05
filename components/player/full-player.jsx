@@ -11,6 +11,7 @@ import {
   FastForward,
   SkipBack,
   SkipForward,
+  X,
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,18 +25,8 @@ import {
 } from "@/hooks/use-context";
 import { IoPause } from "react-icons/io5";
 import { getLyrics } from "@/lib/lyrics-client";
-
-/* =========================
-   Safe HTML entity decoder
-   (avoids dangerouslySetInnerHTML)
-========================= */
-const decodeHTML = (str = "") => {
-  if (typeof str !== "string") return str;
-  if (typeof window === "undefined") return str;
-  const txt = document.createElement("textarea");
-  txt.innerHTML = str;
-  return txt.value;
-};
+import { decodeHTML } from "@/lib/decode-html";
+import { toHinglish } from "@/lib/hinglish";
 
 export default function Player({ id, mode = "page", onClose }) {
   // start with an object so checks are straightforward
@@ -72,6 +63,18 @@ export default function Player({ id, mode = "page", onClose }) {
   const isOverlay = mode === "overlay";
   const lyricsContainerRef = useRef(null);
   const lineRefs = useRef([]);
+
+  useEffect(() => {
+    if (mode !== "tv") return;
+    if (typeof document === "undefined") return;
+    const handleChange = () => {
+      if (!document.fullscreenElement && onClose) onClose();
+    };
+    document.addEventListener("fullscreenchange", handleChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleChange);
+    };
+  }, [mode, onClose]);
 
   const getSong = async () => {
     try {
@@ -423,10 +426,167 @@ export default function Player({ id, mode = "page", onClose }) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [togglePlayPause]);
 
+  if (mode === "tv") {
+    return (
+      <div className="relative h-[100vh] w-[100vw] overflow-hidden bg-black text-white">
+        <img
+          src={data?.image?.[2]?.url || data?.image?.[1]?.url || data?.image?.[0]?.url}
+          alt=""
+          className="absolute inset-0 h-full w-full object-cover opacity-40 scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black/90" />
+        <div className="relative z-10 h-full w-full flex flex-col justify-between p-8 sm:p-10 lg:p-14">
+          <div className="flex items-center justify-between">
+            <div className="text-xs tracking-[0.2em] uppercase text-white/60">
+              Full Screen Mode
+            </div>
+            <Button
+              type="button"
+              size="icon"
+              variant="secondary"
+              onClick={() => (onClose ? onClose() : router.push("/", { scroll: false }))}
+              className="h-10 w-10 rounded-full"
+              title="Exit full screen"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          <div />
+
+          <div className="grid gap-10 items-end">
+            <div className="grid gap-6 w-full max-w-none">
+              <div className="flex items-center gap-4">
+                <img
+                  src={data?.image?.[1]?.url || data?.image?.[0]?.url}
+                  alt={decodeHTML(data?.name || "")}
+                  className="h-16 w-16 rounded-lg object-cover shadow-xl"
+                />
+                <div className="min-w-0">
+                  <h1 className="text-2xl md:text-3xl font-semibold truncate">
+                    {decodeHTML(data?.name || "Unknown")}
+                  </h1>
+                  <p className="text-sm md:text-base text-white/70 truncate">
+                    {decodeHTML(data?.artists?.primary?.[0]?.name || "unknown")}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid gap-2 w-full">
+                <Slider
+                  onValueChange={handleSeek}
+                  value={[currentTime]}
+                  max={duration || 100}
+                  className="w-full"
+                  trackClassName="h-[3px] bg-white/30"
+                  thumbClassName="h-4 w-4 bg-white"
+                />
+                <div className="w-full flex items-center justify-between text-xs text-white/70">
+                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(duration)}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-center gap-4 md:gap-6">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={handlePrevious}
+                  className="rounded-full hover:bg-white/10"
+                  title="Previous"
+                >
+                  <SkipBack className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => (audioRef.current.currentTime -= 10)}
+                  className="rounded-full hover:bg-white/10"
+                  title="Rewind 10s"
+                >
+                  <Rewind className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="default"
+                  className="h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform"
+                  onClick={togglePlayPause}
+                >
+                  {playing ? (
+                    <IoPause className="h-6 w-6" />
+                  ) : (
+                    <Play className="h-6 w-6 fill-current" />
+                  )}
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => (audioRef.current.currentTime += 10)}
+                  className="rounded-full hover:bg-white/10"
+                  title="Fast Forward 10s"
+                >
+                  <FastForward className="h-5 w-5" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  onClick={() => {
+                    if (next?.nextData?.id) {
+                      setMusic(next.nextData.id);
+                    } else {
+                      toast.error("No next song available");
+                    }
+                  }}
+                  className="rounded-full hover:bg-white/10"
+                  title="Next Song"
+                >
+                  <SkipForward className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
+
+            <div />
+          </div>
+          <div className="absolute right-10 top-24 max-w-[40vw] text-right">
+            {isLyricsLoading ? (
+              <div className="text-sm text-white/70 flex items-center gap-2 justify-end">
+                <span className="inline-block h-2 w-2 rounded-full bg-white/60 animate-pulse" />
+                Fetching lyrics...
+              </div>
+            ) : lyricsLines.length > 0 ? (
+              <div>
+                    {lyricsLines.slice(activeLine, activeLine + 3).map((line, idx) => (
+                      <div
+                        key={`${line.time}-${idx}`}
+                        className={`text-xl md:text-2xl font-semibold leading-snug ${
+                          idx === 0 ? "text-white" : "text-white/60"
+                        }`}
+                      >
+                        {toHinglish(line.text || "…")}
+                      </div>
+                    ))}
+              </div>
+            ) : (
+              <div className="text-sm leading-relaxed text-white/80 whitespace-pre-line">
+                {toHinglish(
+                  lyricsText ||
+                    data?.lyrics?.lyrics ||
+                    data?.lyrics ||
+                    data?.subtitles ||
+                    "Lyrics are not available for this track."
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={isOverlay ? "mb-3 mt-2 pt-10 sm:pt-6" : "mb-3 mt-10"}>
       <div className="grid gap-6 w-full">
-        <div className="sm:flex px-6 md:px-20 lg:px-32 grid gap-5 w-full">
+        <div className="grid gap-5 w-full px-4 sm:px-6 md:px-10 lg:px-16 sm:flex sm:items-start max-w-4xl mx-auto">
           <div>
             {!data.name ? (
               <Skeleton className="md:w-[130px] aspect-square rounded-2xl md:h-[150px]" />
@@ -624,18 +784,20 @@ export default function Player({ id, mode = "page", onClose }) {
                               : "text-foreground/60"
                           }`}
                         >
-                          {line.text || "…"}
+                          {toHinglish(line.text || "…")}
                         </button>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <div className="mt-3 text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
-                    {lyricsText ||
-                      data?.lyrics?.lyrics ||
-                      data?.lyrics ||
-                      data?.subtitles ||
-                      "Lyrics are not available for this track."}
+                    {toHinglish(
+                      lyricsText ||
+                        data?.lyrics?.lyrics ||
+                        data?.lyrics ||
+                        data?.subtitles ||
+                        "Lyrics are not available for this track."
+                    )}
                   </div>
                 )}
               </div>

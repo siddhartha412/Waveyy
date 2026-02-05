@@ -8,10 +8,12 @@ export const generateMetadata = async ({ params }) => {
         title: `Album - ${data.data.name}`,
     };
 }
-export default function Page({ params }) {
+export default async function Page({ params }) {
+    const res = await getAlbumById(params.id);
+    const json = await res.json();
     return (
         <main>
-            <Album id={params.id} />
+            <Album data={json.data} />
         </main>
     )
 }
