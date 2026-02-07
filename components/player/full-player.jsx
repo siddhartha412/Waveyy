@@ -460,6 +460,7 @@ export default function Player({ id, mode = "page", onClose }) {
   // === Spacebar play/pause handler ===
   useEffect(() => {
     const onKeyDown = (e) => {
+      if (e.defaultPrevented) return;
       // check for space (use code for consistency, fallback to key)
       const isSpace = e.code === "Space" || e.key === " ";
       if (!isSpace) return;

@@ -204,17 +204,19 @@ export default function Player() {
   };
 
   const togglePlayPause = () => {
-    if (!audioRef.current) return;
-    if (playing) {
-      audioRef.current.pause();
-      localStorage.setItem("p", "false");
-    } else {
-      audioRef.current
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused || audio.ended) {
+      audio
         .play()
+        .then(() => setPlaying(true))
         .catch(() => setPlaying(false));
       localStorage.setItem("p", "true");
+    } else {
+      audio.pause();
+      setPlaying(false);
+      localStorage.setItem("p", "false");
     }
-    setPlaying(!playing);
   };
 
   const handlePrevious = () => {
@@ -393,6 +395,7 @@ export default function Player() {
 
   useEffect(() => {
     const onKeyDown = (e) => {
+      if (e.defaultPrevented) return;
       const isSpace = e.code === "Space" || e.key === " ";
       if (!isSpace) return;
 

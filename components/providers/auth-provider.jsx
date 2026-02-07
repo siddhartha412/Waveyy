@@ -13,6 +13,7 @@ const normalizeUsername = (value = "") =>
     .replace(/\s+/g, "_");
 
 const isEmail = (value = "") => value.includes("@");
+const normalizeBaseUrl = (value = "") => String(value).replace(/\/+$/, "");
 
 const readLocalUsernameMap = () => {
   if (typeof window === "undefined") return {};
@@ -177,7 +178,10 @@ export default function AuthProvider({ children }) {
         if (!supabase) {
           return { error: new Error("Supabase is not configured") };
         }
-        const redirectTo = `${window.location.origin}/auth/callback`;
+        const configured = process.env.NEXT_PUBLIC_APP_URL;
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const baseUrl = normalizeBaseUrl(configured || origin);
+        const redirectTo = `${baseUrl}/auth/callback`;
         return supabase.auth.signInWithOAuth({
           provider: "google",
           options: { redirectTo },
