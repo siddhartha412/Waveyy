@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "../ui/button";
 import {
   FastForward,
@@ -13,7 +13,7 @@ import {
   MonitorPlay,
 } from "lucide-react";
 import { Slider } from "../ui/slider";
-import { getSongsById, getSongsSuggestions } from "@/lib/fetch";
+import { getSongsById, getSongsSuggestions, getSpotifyRecommendations } from "@/lib/fetch";
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
 import { Skeleton } from "../ui/skeleton";
 import { IoPause } from "react-icons/io5";
@@ -22,7 +22,6 @@ import FullPlayer from "@/components/player/full-player";
 import SidebarPlayer from "@/components/player/sidebar-player";
 import { decodeHTML } from "@/lib/decode-html";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { useRef } from "react";
 import { toast } from "sonner";
 
 export default function Player() {
@@ -32,6 +31,7 @@ export default function Player() {
   const [isClosing, setIsClosing] = useState(false);
   const [tvOpen, setTvOpen] = useState(false);
   const closeTimerRef = useRef(null);
+  const recRequestRef = useRef(0);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const {
     music,
@@ -151,26 +151,45 @@ export default function Player() {
       const get = await getSongsById(music);
       const res = await get.json();
       if (res.data?.[0]) {
-        setData(res.data[0]);
-        const urls = res.data[0].downloadUrl;
+        const song = res.data[0];
+        setData(song);
+        const urls = song.downloadUrl;
         setAudioURL(urls[2]?.url || urls[1]?.url || urls[0]?.url || "");
+        return song;
       }
     } catch (e) {
       console.error("Failed to fetch song", e);
     }
+    return null;
   };
 
-  const getRecommendations = async (songId) => {
+  const getRecommendations = async (songId, songMeta = data) => {
+    const requestId = ++recRequestRef.current;
     try {
-      const res = await getSongsSuggestions(songId);
-      const suggestions = await res.json();
+      let suggestions = null;
+      if (songMeta?.name) {
+        const spotifyRes = await getSpotifyRecommendations({
+          name: songMeta.name,
+          artist: songMeta.artists?.primary?.[0]?.name || "",
+          limit: 12,
+        });
+        suggestions = await spotifyRes.json();
+      }
+
+      if (!suggestions || !suggestions.data || suggestions.data.length === 0) {
+        const res = await getSongsSuggestions(songId);
+        suggestions = await res.json();
+      }
+
+      if (requestId !== recRequestRef.current || songId !== music) return;
+
       if (suggestions && suggestions.data.length > 0) {
         const filtered = suggestions.data.filter(
           (s) => s.id !== songId && !history.includes(s.id)
         );
         const finalData = filtered.length > 0 ? filtered : suggestions.data;
         setQueue(finalData);
-        let d = finalData[0];
+        const d = finalData[0];
         next.setNextData({
           id: d.id,
           name: d.name,
@@ -210,28 +229,59 @@ export default function Player() {
     }
   };
 
+  const pushCurrentToHistory = (currentSongId = music) => {
+    if (!currentSongId) return;
+    setHistory((prev) => {
+      if (prev[prev.length - 1] === currentSongId) return prev;
+      return [...prev, currentSongId].slice(-50);
+    });
+  };
+
   const handleNext = () => {
-    if (next?.nextData?.id) {
-      setMusic(next.nextData.id);
-    } else {
-      if (queue && queue.length > 0) {
-        const nextSong = queue[0];
-        setMusic(nextSong.id);
-        const remaining = queue.slice(1);
-        setQueue(remaining);
-        if (remaining[0]) {
-          next.setNextData({
-            id: remaining[0].id,
-            name: remaining[0].name,
-            artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
-            album: remaining[0].album?.name || "unknown",
-            image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
-          });
-        }
-      } else {
-        toast.error("No next song available");
+    const consumeQueue = (currentNextId) => {
+      if (!queue || queue.length === 0) return;
+      const shouldShift = currentNextId && queue[0]?.id === currentNextId;
+      if (!shouldShift) return;
+      const remaining = queue.slice(1);
+      setQueue(remaining);
+      if (remaining[0]) {
+        next.setNextData({
+          id: remaining[0].id,
+          name: remaining[0].name,
+          artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
+          album: remaining[0].album?.name || "unknown",
+          image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
+        });
       }
+    };
+
+    if (next?.nextData?.id) {
+      const nextId = next.nextData.id;
+      pushCurrentToHistory(music);
+      setMusic(nextId);
+      consumeQueue(nextId);
+      return;
     }
+
+    if (queue && queue.length > 0) {
+      const nextSong = queue[0];
+      pushCurrentToHistory(music);
+      setMusic(nextSong.id);
+      const remaining = queue.slice(1);
+      setQueue(remaining);
+      if (remaining[0]) {
+        next.setNextData({
+          id: remaining[0].id,
+          name: remaining[0].name,
+          artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
+          album: remaining[0].album?.name || "unknown",
+          image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
+        });
+      }
+      return;
+    }
+
+    toast.error("No next song available");
   };
 
   const handleSeek = (e) => {
@@ -243,8 +293,11 @@ export default function Player() {
 
   useEffect(() => {
     if (music) {
-      getSong();
-      getRecommendations(music);
+      const run = async () => {
+        const song = await getSong();
+        getRecommendations(music, song);
+      };
+      run();
 
       // Sync initial state from provider
       if (current && Math.abs(current - currentTime) > 1) {
@@ -339,6 +392,28 @@ export default function Player() {
   }, [data, audioURL]);
 
   useEffect(() => {
+    const onKeyDown = (e) => {
+      const isSpace = e.code === "Space" || e.key === " ";
+      if (!isSpace) return;
+
+      const target = e.target;
+      const tag = target && target.tagName ? target.tagName.toUpperCase() : null;
+      const isFormElement =
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        tag === "SELECT" ||
+        (target && target.isContentEditable);
+
+      if (isFormElement) return;
+      e.preventDefault();
+      togglePlayPause();
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [togglePlayPause]);
+
+  useEffect(() => {
     if (!audioRef.current || !audioURL) return;
     const audio = audioRef.current;
     if (playRequested || playing) {
@@ -356,7 +431,10 @@ export default function Player() {
 
   if (!mounted || !music) return null;
   const safeTitle = decodeHTML(data?.name || "");
-  const safeArtist = decodeHTML(data?.artists?.primary?.[0]?.name || "");
+  const artistNames = (data?.artists?.primary || [])
+    .map((a) => a?.name)
+    .filter(Boolean);
+  const safeArtist = decodeHTML(artistNames.join(", ") || "");
 
   return (
     <>

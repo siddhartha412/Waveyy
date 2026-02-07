@@ -1,6 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { getSongsById, getSongsSuggestions } from "@/lib/fetch";
+import { getSongsById, getSongsSuggestions, getSpotifyRecommendations } from "@/lib/fetch";
 import {
   Download,
   Play,
@@ -38,6 +38,8 @@ export default function Player({ id, mode = "page", onClose }) {
   const [activeLine, setActiveLine] = useState(-1);
   const [isLyricsLoading, setIsLyricsLoading] = useState(false);
   const next = useNextMusicProvider();
+  const primaryArtists = (data?.artists?.primary || []).map((a) => a?.name).filter(Boolean);
+  const artistLabel = primaryArtists.join(", ") || "unknown";
   const {
     current,
     setCurrent,
@@ -63,6 +65,7 @@ export default function Player({ id, mode = "page", onClose }) {
   const isOverlay = mode === "overlay";
   const lyricsContainerRef = useRef(null);
   const lineRefs = useRef([]);
+  const recRequestRef = useRef(0);
 
   useEffect(() => {
     if (mode !== "tv") return;
@@ -89,6 +92,7 @@ export default function Player({ id, mode = "page", onClose }) {
             songData.downloadUrl?.[0]?.url ||
             ""
         );
+        return songData;
       } else {
         toast.error("Song not found");
         if (isOverlay) {
@@ -102,6 +106,7 @@ export default function Player({ id, mode = "page", onClose }) {
       console.error("Failed to fetch song:", error);
       toast.error("An error occurred while loading the song");
     }
+    return null;
   };
 
   const parseLrc = (lrcText = "") => {
@@ -282,10 +287,51 @@ export default function Player({ id, mode = "page", onClose }) {
     }
   };
 
-  const getRecommendations = async (songId, currentHistory = history) => {
+  const consumeQueue = (currentNextId) => {
+    if (!queue || queue.length === 0) return;
+    const shouldShift = currentNextId && queue[0]?.id === currentNextId;
+    if (!shouldShift) return;
+    const remaining = queue.slice(1);
+    setQueue(remaining);
+    if (remaining[0]) {
+      next.setNextData({
+        id: remaining[0].id,
+        name: remaining[0].name,
+        artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
+        album: remaining[0].album?.name || "unknown",
+        image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
+      });
+    }
+  };
+
+  const pushCurrentTrackToHistory = (currentSongId = id) => {
+    if (!currentSongId) return;
+    setHistory((prev) => {
+      if (prev[prev.length - 1] === currentSongId) return prev;
+      return [...prev, currentSongId].slice(-50);
+    });
+  };
+
+  const getRecommendations = async (songId, currentHistory = history, songMeta = data) => {
+    const requestId = ++recRequestRef.current;
     try {
-      const res = await getSongsSuggestions(songId);
-      const suggestions = await res.json();
+      let suggestions = null;
+      if (songMeta?.name) {
+        const spotifyRes = await getSpotifyRecommendations({
+          name: songMeta.name,
+          artist: songMeta.artists?.primary?.[0]?.name || "",
+          limit: 12,
+        });
+        suggestions = await spotifyRes.json();
+      }
+
+      if (!suggestions || !suggestions.data || suggestions.data.length === 0) {
+        const res = await getSongsSuggestions(songId);
+        suggestions = await res.json();
+      }
+
+      if (requestId !== recRequestRef.current || songId !== id) return;
+
       if (suggestions && suggestions.data.length > 0) {
         // Filter out the current song and anything in the history
         const filtered = suggestions.data.filter(
@@ -294,7 +340,7 @@ export default function Player({ id, mode = "page", onClose }) {
         const finalData = filtered.length > 0 ? filtered : suggestions.data;
 
         setQueue(finalData);
-        let d = finalData[0]; // Always pick the first unique one
+        const d = finalData[0]; // Always pick the first unique one
         next.setNextData({
           id: d.id,
           name: d.name,
@@ -309,31 +355,34 @@ export default function Player({ id, mode = "page", onClose }) {
   };
 
   useEffect(() => {
-    getSong();
-    localStorage.removeItem("p");
+    const run = async () => {
+      const songMeta = await getSong();
+      localStorage.removeItem("p");
 
-    // Logic to update history when switching songs
-    let updatedHistory = [...history];
-    if (music && music !== id) {
-      if (updatedHistory[updatedHistory.length - 1] !== music) {
+      let updatedHistory = [...history];
+      if (music && music !== id && updatedHistory[updatedHistory.length - 1] !== music) {
         updatedHistory = [...updatedHistory, music].slice(-50);
-        setHistory(updatedHistory);
+        setHistory((prev) => {
+          if (prev[prev.length - 1] === music) return prev;
+          return [...prev, music].slice(-50);
+        });
       }
-    }
 
-    getRecommendations(id, updatedHistory);
+      getRecommendations(id, updatedHistory, songMeta);
 
-    // Only resume playback position if it's the same song being reloaded
-    if (music === id && current) {
-      if (audioRef.current) audioRef.current.currentTime = parseFloat(current);
-    } else {
-      setCurrent(0);
-      setMusic(id);
-      if (audioRef.current) {
-        audioRef.current.currentTime = 0;
+      // Only resume playback position if it's the same song being reloaded
+      if (music === id && current) {
+        if (audioRef.current) audioRef.current.currentTime = parseFloat(current);
+      } else {
+        setCurrent(0);
+        setMusic(id);
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+        }
       }
-    }
-    fetchLyrics(data?.name ? data : null);
+      fetchLyrics(songMeta?.name ? songMeta : null);
+    };
+    run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -348,9 +397,13 @@ export default function Player({ id, mode = "page", onClose }) {
       if (currentTime === duration && !isLooping && duration !== 0) {
         if (isOverlay) {
           if (next?.nextData?.id) {
-            setMusic(next.nextData.id);
+            const nextId = next.nextData.id;
+            pushCurrentTrackToHistory(id);
+            setMusic(nextId);
+            consumeQueue(nextId);
           } else if (queue && queue.length > 0) {
             const nextSong = queue[0];
+            pushCurrentTrackToHistory(id);
             setMusic(nextSong.id);
             const remaining = queue.slice(1);
             setQueue(remaining);
@@ -365,7 +418,12 @@ export default function Player({ id, mode = "page", onClose }) {
             }
           }
         } else {
-          router.push(`/${next?.nextData?.id}`, { scroll: false });
+          if (next?.nextData?.id) {
+            const nextId = next.nextData.id;
+            pushCurrentTrackToHistory(id);
+            consumeQueue(nextId);
+            router.push(`/${nextId}`, { scroll: false });
+          }
         }
       }
     };
@@ -467,7 +525,7 @@ export default function Player({ id, mode = "page", onClose }) {
                     {decodeHTML(data?.name || "Unknown")}
                   </h1>
                   <p className="text-sm md:text-base text-white/70 truncate">
-                    {decodeHTML(data?.artists?.primary?.[0]?.name || "unknown")}
+                    {decodeHTML(artistLabel)}
                   </p>
                 </div>
               </div>
@@ -532,7 +590,10 @@ export default function Player({ id, mode = "page", onClose }) {
                   variant="ghost"
                   onClick={() => {
                     if (next?.nextData?.id) {
-                      setMusic(next.nextData.id);
+                      const nextId = next.nextData.id;
+                      pushCurrentTrackToHistory(id);
+                      setMusic(nextId);
+                      consumeQueue(nextId);
                     } else {
                       toast.error("No next song available");
                     }
@@ -633,19 +694,28 @@ export default function Player({ id, mode = "page", onClose }) {
                   </h1>
                   <p className="text-sm text-muted-foreground">
                     by{" "}
-                    <Link
-                      href={
-                        "/search/" +
-                        `${encodeURI(
-                          decodeHTML(
-                            data.artists?.primary?.[0]?.name?.toLowerCase() || ""
-                          ).split(" ").join("+")
-                        )}`
-                      }
-                      className="text-foreground"
-                    >
-                      {decodeHTML(data.artists?.primary?.[0]?.name || "unknown")}
-                    </Link>
+                    {primaryArtists.length ? (
+                      <>
+                        <Link
+                          href={
+                            "/search/" +
+                            `${encodeURI(
+                              decodeHTML(primaryArtists[0].toLowerCase()).split(" ").join("+")
+                            )}`
+                          }
+                          className="text-foreground"
+                        >
+                          {decodeHTML(primaryArtists[0])}
+                        </Link>
+                        {primaryArtists.length > 1 && (
+                          <span className="text-muted-foreground">
+                            {", " + decodeHTML(primaryArtists.slice(1).join(", "))}
+                          </span>
+                        )}
+                      </>
+                    ) : (
+                      <span className="text-foreground">unknown</span>
+                    )}
                   </p>
                 </div>
                 <div />
@@ -709,10 +779,13 @@ export default function Player({ id, mode = "page", onClose }) {
                       variant="ghost"
                       onClick={() => {
                         if (next?.nextData?.id) {
+                          const nextId = next.nextData.id;
+                          pushCurrentTrackToHistory(id);
+                          consumeQueue(nextId);
                           if (isOverlay) {
-                            setMusic(next.nextData.id);
+                            setMusic(nextId);
                           } else {
-                            router.push(`/${next.nextData.id}`, { scroll: false });
+                            router.push(`/${nextId}`, { scroll: false });
                           }
                         } else {
                           toast.error("No next song available");

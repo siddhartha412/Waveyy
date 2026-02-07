@@ -6,25 +6,46 @@ import SongCard from "@/components/cards/song";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
-import { getSongsSuggestions } from "@/lib/fetch";
-import { useContext, useEffect, useState } from "react";
+import { getSongsById, getSongsSuggestions, getSpotifyRecommendations } from "@/lib/fetch";
+import { useEffect, useRef, useState } from "react";
 
 export default function Recomandation({ id }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const recRequestRef = useRef(0);
   const next = useNextMusicProvider();
   const { setQueue } = useMusicProvider();
 
   useEffect(() => {
     const getData = async () => {
+      const requestId = ++recRequestRef.current;
       if (data.length === 0) setLoading(true); // Only show loading skeletons if no data exists
       try {
-        const res = await getSongsSuggestions(id);
-        const data = await res.json();
-        if (data && data.data.length > 0) {
-          setData(data.data);
-          setQueue(data.data); // Set the full recommendation list as the queue
-          let d = data.data[0]; // Always pick the first one for stability
+        let recData = null;
+        let songMeta = null;
+        if (id) {
+          const songRes = await getSongsById(id);
+          const songJson = await songRes.json();
+          songMeta = songJson?.data?.[0] || null;
+        }
+        if (songMeta?.name) {
+          const spotifyRes = await getSpotifyRecommendations({
+            name: songMeta.name,
+            artist: songMeta.artists?.primary?.[0]?.name || "",
+            limit: 12,
+          });
+          recData = await spotifyRes.json();
+        }
+        if (!recData || !recData.data || recData.data.length === 0) {
+          const res = await getSongsSuggestions(id);
+          recData = await res.json();
+        }
+        if (requestId !== recRequestRef.current) return;
+
+        if (recData && recData.data.length > 0) {
+          setData(recData.data);
+          setQueue(recData.data); // Set the full recommendation list as the queue
+          let d = recData.data[0]; // Always pick the first one for stability
           next.setNextData({
             id: d.id,
             name: d.name,
