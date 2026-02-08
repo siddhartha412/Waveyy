@@ -3,7 +3,6 @@
 import Player from "@/components/cards/player";
 import Footer from "@/components/page/footer";
 import Header from "@/components/page/header";
-import Search from "@/components/page/search";
 import { useMusicProvider } from "@/hooks/use-context";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { usePathname } from "next/navigation";
@@ -16,15 +15,10 @@ export default function RootLayout({ children }) {
     return (
         <main>
             <Header />
-            {!isAuthPage && (
-                <div className="px-6 sm:hidden mb-4">
-                    <Search />
-                </div>
-            )}
             <div className={music && isDesktop && !isAuthPage ? "lg:pr-[360px]" : undefined}>
                 {children}
             </div>
-            {!isAuthPage && <Player />}
+            <Player />
             <Footer />
         </main>
     )

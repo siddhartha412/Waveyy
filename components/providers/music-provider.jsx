@@ -1,8 +1,11 @@
 "use client";
 import { MusicContext } from "@/hooks/use-context";
+import { useAuth } from "@/hooks/use-auth";
+import { logListeningEvent } from "@/lib/listening-events";
 import { useEffect, useRef, useState } from "react";
 
 export default function MusicProvider({ children }) {
+  const { user } = useAuth();
   const [music, setMusic] = useState(null);
   const previousMusicRef = useRef(null);
   const [current, setCurrent] = useState(null);
@@ -36,6 +39,7 @@ export default function MusicProvider({ children }) {
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [playerOpen, setPlayerOpen] = useState(false);
   const [playRequested, setPlayRequested] = useState(false);
+  const [shuffleEnabled, setShuffleEnabled] = useState(false);
   const audioRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -63,10 +67,18 @@ export default function MusicProvider({ children }) {
   useEffect(() => {
     if (!music || previousMusicRef.current === music) return;
     previousMusicRef.current = music;
+    const playedAt = Date.now();
     setPlayLog((prev) => {
-      const next = [...prev, { id: music, playedAt: Date.now() }];
+      const next = [...prev, { id: music, playedAt }];
       return next.slice(-300);
     });
+    if (user?.id) {
+      logListeningEvent({
+        userId: user.id,
+        songId: music,
+        playedAt: new Date(playedAt).toISOString(),
+      }).catch(() => {});
+    }
   }, [music]);
 
   return (
@@ -88,6 +100,8 @@ export default function MusicProvider({ children }) {
         setPlayerOpen,
         playRequested,
         setPlayRequested,
+        shuffleEnabled,
+        setShuffleEnabled,
         audioRef,
         playing,
         setPlaying,

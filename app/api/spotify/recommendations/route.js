@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { getCachedJson, setCachedJson } from "@/lib/redis-server";
+
+const SPOTIFY_REC_CACHE_TTL_SECONDS = 60 * 5; // 5 minutes
 
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_API_BASE = "https://api.spotify.com/v1";
@@ -60,9 +63,15 @@ export async function GET(req) {
     const name = searchParams.get("name") || "";
     const artist = searchParams.get("artist") || "";
     const limit = Math.min(parseInt(searchParams.get("limit") || "12", 10), 20);
+    const cacheKey = `spotify:rec:${name}:${artist}:${limit}`.toLowerCase();
 
     if (!name) {
       return NextResponse.json({ data: [] }, { status: 200 });
+    }
+
+    const cached = await getCachedJson(cacheKey);
+    if (cached) {
+      return NextResponse.json(cached, { status: 200 });
     }
 
     const token = await getSpotifyAccessToken();
@@ -121,7 +130,11 @@ export async function GET(req) {
       }
     }
 
-    return NextResponse.json({ data: results }, { status: 200 });
+    const payload = { data: results };
+    if (results.length > 0) {
+      await setCachedJson(cacheKey, payload, SPOTIFY_REC_CACHE_TTL_SECONDS);
+    }
+    return NextResponse.json(payload, { status: 200 });
   } catch (error) {
     return NextResponse.json({ data: [], error: "Spotify recommendations failed" }, { status: 200 });
   }

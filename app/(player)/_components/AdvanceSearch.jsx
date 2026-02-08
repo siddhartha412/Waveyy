@@ -19,6 +19,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Play } from "lucide-react";
 import { Search } from "lucide-react";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 
 export default function AdvanceSearch() {
     const [query, setQuery] = useState("");
@@ -118,7 +119,11 @@ export default function AdvanceSearch() {
                                         {data.length > 0 && data.map((song) => (
                                             <Link className="w-full hover:bg-secondary/30 border border-border rounded-md p-3 flex items-center justify-between gap-3" key={song.id} href={`/${song.id}`}>
                                                 <div className="flex items-center gap-3">
-                                                    <img src={song.image[2].url} alt={song.name} className="bg-secondary/50 w-8 h-8 rounded-md" />
+                                                    <AdaptiveImage
+                                                        src={song.image[2].url}
+                                                        alt={song.name}
+                                                        className="bg-secondary/50 w-8 h-8 rounded-md"
+                                                    />
                                                     <p className="text-sm grid">
                                                         {song.name.slice(0, 40)}
                                                         {song.name.length > 40 && '...'}

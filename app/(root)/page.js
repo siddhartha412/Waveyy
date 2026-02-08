@@ -5,6 +5,7 @@ import SongCard from "@/components/cards/song";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { useMusicProvider } from "@/hooks/use-context";
 import { useAuth } from "@/hooks/use-auth";
+import { getRecentListeningEvents } from "@/lib/listening-events";
 import {
   getSongsById,
   getSongsByQuery,
@@ -81,8 +82,10 @@ export default function Page() {
   const { user, loading: authLoading } = useAuth();
   const [recommended, setRecommended] = useState([]);
   const [recommendedGenres, setRecommendedGenres] = useState([]);
+  const [recentlyPlayed, setRecentlyPlayed] = useState([]);
   const [trending, setTrending] = useState([]);
   const [recLoading, setRecLoading] = useState(true);
+  const [recentLoading, setRecentLoading] = useState(true);
   const [trendLoading, setTrendLoading] = useState(true);
   const recRequestRef = useRef(0);
 
@@ -92,27 +95,60 @@ export default function Page() {
       if (!user) {
         setRecommended([]);
         setRecommendedGenres([]);
+        setRecentlyPlayed([]);
         setRecLoading(false);
+        setRecentLoading(false);
         return;
       }
 
       setRecLoading(true);
+      setRecentLoading(true);
 
       try {
         const cutoff = Date.now() - FIVE_DAYS_MS;
-        const recentEntries = (playLog || []).filter((entry) => entry.playedAt >= cutoff);
+        let recentEntries = [];
 
-        const uniqueRecentIds = [...new Set(recentEntries.map((entry) => entry.id).reverse())].slice(0, 10);
+        if (user?.id) {
+          const { data: dbEvents, error } = await getRecentListeningEvents({
+            userId: user.id,
+            days: 5,
+            limit: 300,
+          });
+          if (!error && dbEvents.length > 0) {
+            recentEntries = dbEvents.map((entry) => ({
+              id: entry.song_id,
+              playedAt: new Date(entry.played_at).getTime(),
+            }));
+          }
+        }
+
+        if (recentEntries.length === 0) {
+          recentEntries = (playLog || []).filter((entry) => entry.playedAt >= cutoff);
+        }
+
+        const normalizedRecentEntries = recentEntries
+          .map((entry) => ({
+            id: entry?.id,
+            playedAt: Number(entry?.playedAt) || 0,
+          }))
+          .filter((entry) => entry.id && entry.playedAt > 0)
+          .sort((a, b) => b.playedAt - a.playedAt);
+
+        const recentIdsByTime = [
+          ...new Set(normalizedRecentEntries.map((entry) => entry.id)),
+        ];
+        const uniqueRecentIds = recentIdsByTime.slice(0, 10);
 
         if (!uniqueRecentIds.length) {
           setRecommended([]);
           setRecommendedGenres([]);
+          setRecentlyPlayed([]);
           return;
         }
 
-        const songMetaList = (
+        const recentSongMetaList = (
           await Promise.all(
-            uniqueRecentIds.map(async (songId) => {
+            recentIdsByTime.slice(0, 12).map(async (songId) => {
               try {
                 const res = await getSongsById(songId);
                 if (!res) return null;
@@ -125,8 +161,21 @@ export default function Page() {
           )
         ).filter(Boolean);
 
+        const songMetaMap = new Map(recentSongMetaList.map((song) => [song.id, song]));
+        const orderedRecentSongs = recentIdsByTime
+          .map((songId) => songMetaMap.get(songId))
+          .filter(Boolean)
+          .slice(0, 12);
+
+        if (requestId !== recRequestRef.current) return;
+        setRecentlyPlayed(orderedRecentSongs);
+
+        const seedSongMeta = uniqueRecentIds
+          .map((songId) => songMetaMap.get(songId))
+          .filter(Boolean);
+
         const genreCount = new Map();
-        for (const song of songMetaList) {
+        for (const song of seedSongMeta) {
           for (const tag of getGenreTags(song)) {
             genreCount.set(tag, (genreCount.get(tag) || 0) + 1);
           }
@@ -159,11 +208,11 @@ export default function Page() {
           if (collected.length >= 20) break;
         }
 
-        if (collected.length < 20 && songMetaList[0]?.name) {
+        if (collected.length < 20 && seedSongMeta[0]?.name) {
           try {
             const spotifyRes = await getSpotifyRecommendations({
-              name: songMetaList[0].name,
-              artist: songMetaList[0].artists?.primary?.[0]?.name || "",
+              name: seedSongMeta[0].name,
+              artist: seedSongMeta[0].artists?.primary?.[0]?.name || "",
               limit: 12,
             });
             const spotifyData = await spotifyRes.json();
@@ -198,7 +247,10 @@ export default function Page() {
         setRecommended(collected);
         setRecommendedGenres(topGenres.map(formatTag));
       } finally {
-        if (requestId === recRequestRef.current) setRecLoading(false);
+        if (requestId === recRequestRef.current) {
+          setRecLoading(false);
+          setRecentLoading(false);
+        }
       }
     };
 
@@ -264,6 +316,36 @@ export default function Page() {
                         />
                       ))
                     : Array.from({ length: 6 }).map((_, i) => <SongCard key={`rec-empty-${i}`} />)}
+              </div>
+              <ScrollBar orientation="horizontal" className="hidden sm:flex" />
+            </ScrollArea>
+          </div>
+        </section>
+      )}
+
+      {user && (
+        <section className="mt-12">
+          <div>
+            <h2 className="text-xl font-semibold">Recently Played</h2>
+            <p className="text-sm text-muted-foreground">From your account activity.</p>
+          </div>
+          <div className="mt-4">
+            <ScrollArea>
+              <div className="flex gap-4">
+                {recentLoading
+                  ? Array.from({ length: 6 }).map((_, i) => <SongCard key={`recent-skel-${i}`} />)
+                  : recentlyPlayed.length > 0
+                    ? recentlyPlayed.map((song) => (
+                        <SongCard
+                          key={song.id}
+                          id={song.id}
+                          image={toImage(song)}
+                          artist={toArtistLabel(song)}
+                          title={song.name}
+                          playCount={song.playCount}
+                        />
+                      ))
+                    : Array.from({ length: 6 }).map((_, i) => <SongCard key={`recent-empty-${i}`} />)}
               </div>
               <ScrollBar orientation="horizontal" className="hidden sm:flex" />
             </ScrollArea>

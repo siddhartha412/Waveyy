@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Chrome } from "lucide-react";
+import { FaDiscord } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
@@ -13,8 +14,14 @@ const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,30}$/;
 
 export default function AuthForm({ mode }) {
   const router = useRouter();
-  const { loading, isConfigured, signInWithPassword, signUpWithPassword, signInWithGoogle } =
-    useAuth();
+  const {
+    loading,
+    isConfigured,
+    signInWithPassword,
+    signUpWithPassword,
+    signInWithGoogle,
+    connectDiscord,
+  } = useAuth();
   const [identifier, setIdentifier] = useState("");
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
@@ -93,6 +100,16 @@ export default function AuthForm({ mode }) {
     try {
       const { error } = await signInWithGoogle();
       if (error) toast.error(error.message || "Google sign-in failed");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const onDiscord = async () => {
+    setSubmitting(true);
+    try {
+      const { error } = await connectDiscord();
+      if (error) toast.error(error.message || "Discord auth failed");
     } finally {
       setSubmitting(false);
     }
@@ -185,6 +202,16 @@ export default function AuthForm({ mode }) {
         >
           <Chrome className="mr-2 h-4 w-4" />
           Continue with Google
+        </Button>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full mt-2"
+          onClick={onDiscord}
+          disabled={submitting || loading || !isConfigured}
+        >
+          <FaDiscord className="mr-2 h-4 w-4" />
+          Continue with Discord
         </Button>
 
         <p className="mt-4 text-sm text-muted-foreground">

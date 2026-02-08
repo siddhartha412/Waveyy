@@ -2,12 +2,13 @@ import Link from "next/link";
 import { Badge } from "../ui/badge";
 import { Play } from "lucide-react";
 import { Button } from "../ui/button";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 
 export default function Next({ name, artist, image, id, next = true }) {
   return (
     <Link href={`/${id}`}>
       <div className="flex items-center gap-3 bg-secondary/30 border p-2 rounded-md">
-        <img src={image} className="aspect-square w-10 rounded-md" />
+        <AdaptiveImage src={image} alt={name} className="aspect-square w-10 rounded-md" />
         <div className="overflow-hidden flex-1">
           <h1 className="text-secondary-foreground text-base text-ellipsis whitespace-nowrap overflow-hidden sm:max-w-md max-w-[150px]">
             {name}

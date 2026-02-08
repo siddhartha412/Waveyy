@@ -14,15 +14,15 @@ const bricolage_grotesque = Bricolage_Grotesque({
 });
 
 export const metadata = {
-  title: "MusicHub",
-  description: "Open-Source music streamer.",
+  title: "Waveyy",
+  description: "Sound like real waves.",
   icons: "/favi-icon.jpg",
   manifest: "/manifest.json",
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={bricolage_grotesque.className}>
         <ThemeProvider
           attribute="class"

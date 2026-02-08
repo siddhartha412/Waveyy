@@ -1,4 +1,7 @@
 import { NextResponse } from "next/server";
+import { getCachedJson, setCachedJson } from "@/lib/redis-server";
+
+const LYRICS_CACHE_TTL_SECONDS = 60 * 60 * 24 * 3; // 3 days
 
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
@@ -6,9 +9,15 @@ export async function GET(req) {
   const artist = searchParams.get("artist") || "";
   const album = searchParams.get("album") || "";
   const duration = searchParams.get("duration") || "";
+  const cacheKey = `lyrics:${track}:${artist}:${album}:${duration}`.toLowerCase();
 
   if (!track || !artist) {
     return NextResponse.json({ error: "Missing track or artist" }, { status: 400 });
+  }
+
+  const cached = await getCachedJson(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached, { status: 200 });
   }
 
   try {
@@ -29,6 +38,9 @@ export async function GET(req) {
       });
       if (getRes.ok) {
         const data = await getRes.json();
+        if (data?.syncedLyrics || data?.plainLyrics) {
+          await setCachedJson(cacheKey, data, LYRICS_CACHE_TTL_SECONDS);
+        }
         return NextResponse.json(data, { status: 200 });
       }
     }
@@ -60,6 +72,9 @@ export async function GET(req) {
       return NextResponse.json({ error: "Lyrics not found" }, { status: 404 });
     }
 
+    if (best?.syncedLyrics || best?.plainLyrics) {
+      await setCachedJson(cacheKey, best, LYRICS_CACHE_TTL_SECONDS);
+    }
     return NextResponse.json(best, { status: 200 });
   } catch (e) {
     return NextResponse.json({ error: "Lyrics fetch failed" }, { status: 500 });

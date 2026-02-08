@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { getCachedJson, setCachedJson } from "@/lib/redis-server";
+
+const JIOSAAVN_TOP_CHARTS_TTL_SECONDS = 60 * 5; // 5 minutes
+const JIOSAAVN_DEFAULT_TTL_SECONDS = 60 * 2; // 2 minutes
 
 const ALLOWED_PATHS = new Set([
   "searchSongs",
@@ -14,6 +18,16 @@ const PATH_MAP = {
   artistDetails: "artists",
   recommendedSongs: "songs/recommendations",
   topCharts: "modules",
+};
+
+const hasMeaningfulPayload = (data) => {
+  if (!data) return false;
+  if (Array.isArray(data)) return data.length > 0;
+  if (Array.isArray(data?.data)) return data.data.length > 0;
+  if (Array.isArray(data?.data?.results)) return data.data.results.length > 0;
+  if (Array.isArray(data?.results)) return data.results.length > 0;
+  if (Array.isArray(data?.songs)) return data.songs.length > 0;
+  return true;
 };
 
 const buildBaseCandidates = () => {
@@ -40,8 +54,15 @@ const buildBaseCandidates = () => {
 export async function GET(req) {
   const { searchParams } = new URL(req.url);
   const path = searchParams.get("path") || "";
+  const rawParams = searchParams.toString();
+  const cacheKey = `jiosaavn:${path}:${rawParams}`.toLowerCase();
   if (!ALLOWED_PATHS.has(path)) {
     return NextResponse.json({ error: "Invalid path" }, { status: 400 });
+  }
+
+  const cached = await getCachedJson(cacheKey);
+  if (cached) {
+    return NextResponse.json(cached, { status: 200 });
   }
 
   const params = new URLSearchParams(searchParams);
@@ -70,6 +91,13 @@ export async function GET(req) {
         continue;
       }
       const data = await res.json();
+      if (hasMeaningfulPayload(data)) {
+        const ttl =
+          path === "topCharts"
+            ? JIOSAAVN_TOP_CHARTS_TTL_SECONDS
+            : JIOSAAVN_DEFAULT_TTL_SECONDS;
+        await setCachedJson(cacheKey, data, ttl);
+      }
       return NextResponse.json(data, { status: 200 });
     }
 

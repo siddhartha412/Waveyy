@@ -7,6 +7,7 @@ import {
   Repeat,
   Repeat1,
   Rewind,
+  Shuffle,
   SkipBack,
   SkipForward,
   X,
@@ -17,12 +18,13 @@ import { getSongsById, getSongsSuggestions, getSpotifyRecommendations } from "@/
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
 import { Skeleton } from "../ui/skeleton";
 import { IoPause } from "react-icons/io5";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import FullPlayer from "@/components/player/full-player";
 import SidebarPlayer from "@/components/player/sidebar-player";
 import { decodeHTML } from "@/lib/decode-html";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Player() {
   const [mounted, setMounted] = useState(false);
@@ -32,6 +34,7 @@ export default function Player() {
   const [tvOpen, setTvOpen] = useState(false);
   const closeTimerRef = useRef(null);
   const recRequestRef = useRef(0);
+  const discordLastPublishKeyRef = useRef("");
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const {
     music,
@@ -46,6 +49,8 @@ export default function Player() {
     setPlayerOpen,
     playRequested,
     setPlayRequested,
+    shuffleEnabled,
+    setShuffleEnabled,
     audioRef,
     playing,
     setPlaying,
@@ -57,6 +62,7 @@ export default function Player() {
     setAudioURL,
   } = useMusicProvider();
   const next = useNextMusicProvider();
+  const { user, discordConnected } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -97,6 +103,62 @@ export default function Player() {
       document.exitFullscreen?.().catch(() => {});
     }
   }, [tvOpen]);
+
+  const publishDiscordActivity = async (payload) => {
+    try {
+      await fetch("/api/discord/activity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+    } catch {
+      // ignore bridge failures: player should never break because of RPC
+    }
+  };
+
+  useEffect(() => {
+    if (!mounted) return;
+    if (!user || !discordConnected) {
+      const clearKey = "inactive";
+      if (discordLastPublishKeyRef.current !== clearKey) {
+        discordLastPublishKeyRef.current = clearKey;
+        publishDiscordActivity({ active: false });
+      }
+      return;
+    }
+
+    const activeSongId = data?.id || music || null;
+    if (!activeSongId || !data) {
+      const clearKey = "inactive";
+      if (discordLastPublishKeyRef.current !== clearKey) {
+        discordLastPublishKeyRef.current = clearKey;
+        publishDiscordActivity({ active: false });
+      }
+      return;
+    }
+
+    const artistNames = (data?.artists?.primary || [])
+      .map((artist) => artist?.name)
+      .filter(Boolean)
+      .join(", ");
+    const positionBucket = Math.floor((Number(currentTime) || 0) / 15);
+    const publishKey = `${activeSongId}:${playing ? "playing" : "paused"}:${positionBucket}`;
+    if (discordLastPublishKeyRef.current === publishKey) return;
+
+    discordLastPublishKeyRef.current = publishKey;
+    publishDiscordActivity({
+      active: true,
+      userId: user.id,
+      songId: activeSongId,
+      title: decodeHTML(data?.name || "Unknown Track"),
+      artist: decodeHTML(artistNames || "Unknown Artist"),
+      album: decodeHTML(data?.album?.name || ""),
+      playing: Boolean(playing),
+      durationSeconds: Number(duration) || 0,
+      positionSeconds: Number(currentTime) || 0,
+      updatedAt: Date.now(),
+    });
+  }, [mounted, user, discordConnected, music, data, playing, duration, currentTime]);
 
   const finalizeClosePlayer = () => {
     if (audioRef.current) {
@@ -189,7 +251,9 @@ export default function Player() {
         );
         const finalData = filtered.length > 0 ? filtered : suggestions.data;
         setQueue(finalData);
-        const d = finalData[0];
+        const d = shuffleEnabled
+          ? finalData[Math.floor(Math.random() * finalData.length)]
+          : finalData[0];
         next.setNextData({
           id: d.id,
           name: d.name,
@@ -211,11 +275,10 @@ export default function Player() {
         .play()
         .then(() => setPlaying(true))
         .catch(() => setPlaying(false));
-      localStorage.setItem("p", "true");
     } else {
+      setPlayRequested(false);
       audio.pause();
       setPlaying(false);
-      localStorage.setItem("p", "false");
     }
   };
 
@@ -240,46 +303,52 @@ export default function Player() {
   };
 
   const handleNext = () => {
+    const pickNextCandidate = (items) => {
+      if (!items || items.length === 0) return null;
+      if (!shuffleEnabled) return items[0];
+      const idx = Math.floor(Math.random() * items.length);
+      return items[idx];
+    };
+
     const consumeQueue = (currentNextId) => {
       if (!queue || queue.length === 0) return;
-      const shouldShift = currentNextId && queue[0]?.id === currentNextId;
-      if (!shouldShift) return;
-      const remaining = queue.slice(1);
+      const remaining = queue.filter((song) => song.id !== currentNextId);
       setQueue(remaining);
-      if (remaining[0]) {
+      const candidate = pickNextCandidate(remaining);
+      if (candidate) {
         next.setNextData({
-          id: remaining[0].id,
-          name: remaining[0].name,
-          artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
-          album: remaining[0].album?.name || "unknown",
-          image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
+          id: candidate.id,
+          name: candidate.name,
+          artist: candidate.artists?.primary?.[0]?.name || "unknown",
+          album: candidate.album?.name || "unknown",
+          image: candidate.image?.[1]?.url || candidate.image?.[0]?.url,
         });
+      } else {
+        next.setNextData(null);
       }
     };
 
     if (next?.nextData?.id) {
       const nextId = next.nextData.id;
       pushCurrentToHistory(music);
+      setPlaying(true);
+      setPlayRequested(true);
       setMusic(nextId);
       consumeQueue(nextId);
       return;
     }
 
     if (queue && queue.length > 0) {
-      const nextSong = queue[0];
-      pushCurrentToHistory(music);
-      setMusic(nextSong.id);
-      const remaining = queue.slice(1);
-      setQueue(remaining);
-      if (remaining[0]) {
-        next.setNextData({
-          id: remaining[0].id,
-          name: remaining[0].name,
-          artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
-          album: remaining[0].album?.name || "unknown",
-          image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
-        });
+      const nextSong = pickNextCandidate(queue);
+      if (!nextSong) {
+        toast.error("No next song available");
+        return;
       }
+      pushCurrentToHistory(music);
+      setPlaying(true);
+      setPlayRequested(true);
+      setMusic(nextSong.id);
+      consumeQueue(nextSong.id);
       return;
     }
 
@@ -305,8 +374,6 @@ export default function Player() {
       if (current && Math.abs(current - currentTime) > 1) {
         if (audioRef.current) audioRef.current.currentTime = parseFloat(current);
       }
-
-      setPlaying(localStorage.getItem("p") !== "false");
 
       const handleTimeUpdate = () => {
         if (audioRef.current) {
@@ -419,18 +486,18 @@ export default function Player() {
   useEffect(() => {
     if (!audioRef.current || !audioURL) return;
     const audio = audioRef.current;
-    if (playRequested || playing) {
+    const shouldPlay = playRequested || playing;
+    if (shouldPlay) {
       const res = audio.play();
       if (res && typeof res.catch === "function") {
         res.catch(() => setPlaying(false));
       } else {
         setPlaying(true);
       }
-      if (playRequested) setPlayRequested(false);
-    } else {
-      audio.pause();
+      return;
     }
-  }, [audioURL, playRequested, playing, setPlayRequested, setPlaying]);
+    audio.pause();
+  }, [audioURL, playRequested, setPlayRequested, setPlaying]);
 
   if (!mounted || !music) return null;
   const safeTitle = decodeHTML(data?.name || "");
@@ -583,6 +650,15 @@ export default function Player() {
             <Button
               size="icon"
               variant="ghost"
+              onClick={() => setShuffleEnabled((prev) => !prev)}
+              className={`h-9 w-9 ${shuffleEnabled ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
+              title="Shuffle"
+            >
+              <Shuffle className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
               onClick={() => {
                 setIsLooping(!isLooping);
                 if (audioRef.current) audioRef.current.loop = !isLooping;
@@ -616,15 +692,29 @@ export default function Player() {
 
       <audio
         ref={audioRef}
-        src={audioURL}
+        src={audioURL || undefined}
         autoPlay={playing}
-        onPlay={() => setPlaying(true)}
-        onPause={() => setPlaying(false)}
-        onLoadedData={() => setDuration(audioRef.current?.duration || 0)}
+        onPlay={() => {
+          setPlaying(true);
+          if (playRequested) setPlayRequested(false);
+        }}
+        onPause={() => {
+          // Ignore pause events fired during source swaps while a play is still pending.
+          if (!playRequested) setPlaying(false);
+        }}
+        onLoadedData={() => {
+          setDuration(audioRef.current?.duration || 0);
+          if (!audioRef.current || (!playRequested && !playing)) return;
+          const res = audioRef.current.play();
+          if (res && typeof res.catch === "function") {
+            res.catch(() => setPlaying(false));
+          }
+        }}
       />
       {!isDesktop && (
         <Dialog open={playerOpen} onOpenChange={setPlayerOpen}>
           <DialogContent className="w-[100vw] h-[100vh] max-w-none rounded-none overflow-y-auto p-0 bg-background">
+            <DialogTitle className="sr-only">Mobile Player</DialogTitle>
             <div className="relative pt-14 sm:pt-6">
               <Button
                 type="button"
@@ -645,6 +735,7 @@ export default function Player() {
       {isDesktop && (
         <Dialog open={tvOpen} onOpenChange={setTvOpen}>
           <DialogContent className="w-[100vw] h-[100vh] max-w-none rounded-none overflow-hidden p-0 bg-black">
+            <DialogTitle className="sr-only">Full Screen Player</DialogTitle>
             <FullPlayer
               id={music}
               mode="tv"

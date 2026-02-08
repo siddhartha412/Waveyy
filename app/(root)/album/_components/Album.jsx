@@ -7,6 +7,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getAlbumById } from "@/lib/fetch";
 import { useEffect, useState } from "react"
+import AdaptiveImage from "@/components/ui/adaptive-image";
 
 // Removed fetch logic to allow server-side data passing
 export default function Album({ data }) {
@@ -18,7 +19,11 @@ export default function Album({ data }) {
             {data.image ? (
                 <div>
                     <div className="md:flex gap-10">
-                        <img src={data.image[2]?.url} alt={data.name} className="w-full md:w-[200px] md:h-[200px] rounded-2xl" />
+                        <AdaptiveImage
+                            src={data.image[2]?.url}
+                            alt={data.name}
+                            className="w-full md:w-[200px] md:h-[200px] rounded-2xl"
+                        />
                         <div className="mt-5 mb-1">
                             <h1 className="text-xl font-medium">{data.name}</h1>
                             <p className="text-sm text-muted-foreground mt-1">{data.description}</p>

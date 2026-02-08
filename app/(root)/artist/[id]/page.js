@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { decodeHTML } from "@/lib/decode-html";
 import { Users, CheckCircle } from "lucide-react";
+import HeroPlayButton from "@/components/artist/hero-play-button";
 
 export default async function ArtistPage({ params }) {
-    const { id } = params;
+    const { id } = await params;
     const res = await getArtistById(id);
     const json = await res.json();
     const data = json.data;
@@ -16,6 +17,7 @@ export default async function ArtistPage({ params }) {
 
     const artistImage = data.image?.[2]?.url;
     const bannerImage = artistImage;
+    const firstSongId = data.topSongs?.[0]?.id;
 
     return (
         <div className="pb-24 md:pb-10">
@@ -49,6 +51,11 @@ export default async function ArtistPage({ params }) {
                                 {Number(data.followerCount) > 0 && <span>•</span>}
                                 <span>{data.dominantLanguage} {data.dominantType}</span>
                             </div>
+                            {firstSongId && (
+                                <div className="mt-4 flex items-center justify-center md:justify-start">
+                                    <HeroPlayButton songId={firstSongId} />
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -60,7 +67,24 @@ export default async function ArtistPage({ params }) {
                 {data.topSongs && data.topSongs.length > 0 && (
                     <section>
                         <h2 className="text-2xl font-bold mb-6">Popular</h2>
-                        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                        <div className="md:hidden">
+                            <ScrollArea className="whitespace-nowrap pb-2">
+                                <div className="flex gap-4">
+                                    {data.topSongs.map((song) => (
+                                        <SongCard
+                                            key={song.id}
+                                            id={song.id}
+                                            image={song.image?.[2]?.url}
+                                            title={song.name}
+                                            artist={song.artists.primary[0]?.name}
+                                            playCount={song.playCount}
+                                        />
+                                    ))}
+                                </div>
+                                <ScrollBar orientation="horizontal" className="hidden sm:flex" />
+                            </ScrollArea>
+                        </div>
+                        <div className="hidden md:grid md:grid-cols-4 lg:grid-cols-5 gap-4">
                             {data.topSongs.map((song) => (
                                 <SongCard
                                     key={song.id}

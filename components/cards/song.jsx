@@ -6,6 +6,7 @@ import { MusicContext } from "@/hooks/use-context";
 import { IoPlay } from "react-icons/io5";
 import { FaFire } from "react-icons/fa";
 import { decodeHTML } from "@/lib/decode-html";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 
 export default function SongCard({ title, image, artist, id, desc, playCount }) {
     const ids = useContext(MusicContext);
@@ -13,7 +14,7 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
     const safeArtist = decodeHTML(artist || "");
     const safeDesc = decodeHTML(desc || "");
     const setLastPlayed = () => {
-        localStorage.clear();
+        localStorage.removeItem("last-played");
         localStorage.setItem("last-played", id);
     };
 
@@ -24,7 +25,11 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
             <div className="overflow-hidden rounded-md">
                 {image ? (
                     <div className="relative" onClick={() => { ids.setMusic(id); ids.setPlayRequested?.(true); setLastPlayed(); }}>
-                        <img src={image} alt={safeTitle} className="h-[182px] blurz w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-context-menu" />
+                        <AdaptiveImage
+                            src={image}
+                            alt={safeTitle}
+                            className="h-[182px] blurz w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-context-menu"
+                        />
                         <div className="cursor-pointer absolute z-10 bottom-2 left-2 bg-background/60 backdrop-blur-md rounded-full h-8 w-8 flex items-center justify-center"><IoPlay className="w-4 h-4 -mr-0.5 dark:fill-white" /></div>
                         {isPopular && (
                             <div className="absolute top-2 right-2 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">

@@ -14,6 +14,15 @@ const normalizeUsername = (value = "") =>
 
 const isEmail = (value = "") => value.includes("@");
 const normalizeBaseUrl = (value = "") => String(value).replace(/\/+$/, "");
+const hasDiscordIdentity = (user) => {
+  if (!user) return false;
+  const providers = Array.isArray(user?.app_metadata?.providers)
+    ? user.app_metadata.providers
+    : [];
+  if (providers.includes("discord")) return true;
+  const identities = Array.isArray(user?.identities) ? user.identities : [];
+  return identities.some((identity) => identity?.provider === "discord");
+};
 
 const readLocalUsernameMap = () => {
   if (typeof window === "undefined") return {};
@@ -127,6 +136,7 @@ export default function AuthProvider({ children }) {
       session,
       user,
       loading,
+      discordConnected: hasDiscordIdentity(user),
       isConfigured: Boolean(supabase),
       signInWithPassword: async ({ identifier, password }) => {
         if (!supabase) {
@@ -184,6 +194,29 @@ export default function AuthProvider({ children }) {
         const redirectTo = `${baseUrl}/auth/callback`;
         return supabase.auth.signInWithOAuth({
           provider: "google",
+          options: { redirectTo },
+        });
+      },
+      connectDiscord: async () => {
+        if (!supabase) {
+          return { error: new Error("Supabase is not configured") };
+        }
+        const configured = process.env.NEXT_PUBLIC_APP_URL;
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const baseUrl = normalizeBaseUrl(configured || origin);
+        const redirectTo = `${baseUrl}/auth/callback`;
+
+        // If user already has a session, link Discord as an additional identity.
+        if (user) {
+          return supabase.auth.linkIdentity({
+            provider: "discord",
+            options: { redirectTo },
+          });
+        }
+
+        // Fallback: direct sign-in via Discord.
+        return supabase.auth.signInWithOAuth({
+          provider: "discord",
           options: { redirectTo },
         });
       },

@@ -3,7 +3,8 @@ import Player from "@/components/player/full-player";
 
 export const generateMetadata = async ({ params }) => {
   try {
-    const title = await getSongsById(params.id);
+    const { id } = await params;
+    const title = await getSongsById(id);
     const data = await title.json();
     const song = data?.data?.[0];
 
@@ -51,10 +52,11 @@ export const generateMetadata = async ({ params }) => {
   }
 };
 
-export default function Page({ params }) {
+export default async function Page({ params }) {
+  const { id } = await params;
   return (
     <div>
-      <Player id={params.id} />
+      <Player id={id} />
     </div>
   );
 }

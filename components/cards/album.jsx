@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
 import { Badge } from "../ui/badge";
 import { decodeHTML } from "@/lib/decode-html";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 
 export default function AlbumCard({ title, image, artist, id, desc, lang }) {
     const safeTitle = decodeHTML(title || "");
@@ -12,7 +13,11 @@ export default function AlbumCard({ title, image, artist, id, desc, lang }) {
             <div className="overflow-hidden rounded-md">
                 {image ? (
                     <Link href={`/${id}`}>
-                        <img src={image} alt={safeTitle} className="h-[182px] w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-pointer" />
+                        <AdaptiveImage
+                            src={image}
+                            alt={safeTitle}
+                            className="h-[182px] w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-pointer"
+                        />
                     </Link>
                 ) : (
                     <Skeleton className="w-full h-[182px]" />

@@ -1,12 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Logo from "./logo";
-import { Button } from "../ui/button";
 import Search from "./search";
-import { ChevronLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useMusicProvider } from "@/hooks/use-context";
-import Link from "next/link";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import AuthActions from "./auth-actions";
 
@@ -15,6 +13,7 @@ export default function Header() {
   const { playerOpen, music } = useMusicProvider();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isAuthPage = path === "/login" || path === "/signup";
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   if (playerOpen && !isDesktop) return null;
 
@@ -33,29 +32,20 @@ export default function Header() {
           <div className="w-full max-w-md">
             <Search />
           </div>
-          {path !== "/" && (
-            <Button className="h-10 px-3" variant="outline" asChild>
-              <Link href="/" className="flex items-center gap-1">
-                <ChevronLeft className="w-4 h-4" />
-                Back
-              </Link>
-            </Button>
-          )}
         </div>
 
-        {path !== "/" && (
-          <Button className="rounded-full sm:hidden h-8 px-3" variant="outline" asChild>
-            <Link href="/" className="flex items-center gap-1">
-              <ChevronLeft className="w-4 h-4" />
-              Back
-            </Link>
-          </Button>
+        {!isAuthPage && (
+          <div className="ml-auto">
+            <AuthActions onMenuOpenChange={setIsAccountMenuOpen} />
+          </div>
         )}
-
-        <div className="ml-auto">
-          <AuthActions />
-        </div>
       </div>
+
+      {!isAuthPage && (
+        <div className={`mt-3 sm:hidden ${isAccountMenuOpen ? "hidden" : "block"}`}>
+          <Search />
+        </div>
+      )}
     </header>
   );
 }

@@ -9,6 +9,7 @@ import {
   Share2,
   Rewind,
   FastForward,
+  Shuffle,
   SkipBack,
   SkipForward,
   X,
@@ -37,6 +38,10 @@ export default function Player({ id, mode = "page", onClose }) {
   const [lyricsText, setLyricsText] = useState("");
   const [activeLine, setActiveLine] = useState(-1);
   const [isLyricsLoading, setIsLyricsLoading] = useState(false);
+  const [isSeeking, setIsSeeking] = useState(false);
+  const [seekPreviewTime, setSeekPreviewTime] = useState(0);
+  const [clockTime, setClockTime] = useState(() => new Date());
+  const [showTvCloseButton, setShowTvCloseButton] = useState(true);
   const next = useNextMusicProvider();
   const primaryArtists = (data?.artists?.primary || []).map((a) => a?.name).filter(Boolean);
   const artistLabel = primaryArtists.join(", ") || "unknown";
@@ -48,12 +53,15 @@ export default function Player({ id, mode = "page", onClose }) {
     history,
     setHistory,
     setQueue,
+    shuffleEnabled,
+    setShuffleEnabled,
     setDownloadProgress,
     downloadProgress,
     queue,
     audioRef,
     playing,
     setPlaying,
+    setPlayRequested,
     currentTime,
     setCurrentTime,
     duration,
@@ -66,6 +74,7 @@ export default function Player({ id, mode = "page", onClose }) {
   const lyricsContainerRef = useRef(null);
   const lineRefs = useRef([]);
   const recRequestRef = useRef(0);
+  const tvControlsTimerRef = useRef(null);
 
   useEffect(() => {
     if (mode !== "tv") return;
@@ -79,19 +88,50 @@ export default function Player({ id, mode = "page", onClose }) {
     };
   }, [mode, onClose]);
 
+  useEffect(() => {
+    if (mode !== "tv") return;
+    setClockTime(new Date());
+    const timer = setInterval(() => setClockTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, [mode]);
+
+  useEffect(() => {
+    if (mode !== "tv") return;
+    const hideControls = () => {
+      setShowTvCloseButton(false);
+    };
+    const bumpControls = () => {
+      setShowTvCloseButton(true);
+      if (tvControlsTimerRef.current) clearTimeout(tvControlsTimerRef.current);
+      tvControlsTimerRef.current = setTimeout(hideControls, 1000);
+    };
+
+    bumpControls();
+    window.addEventListener("mousemove", bumpControls);
+    window.addEventListener("keydown", bumpControls);
+    window.addEventListener("touchstart", bumpControls, { passive: true });
+    return () => {
+      window.removeEventListener("mousemove", bumpControls);
+      window.removeEventListener("keydown", bumpControls);
+      window.removeEventListener("touchstart", bumpControls);
+      if (tvControlsTimerRef.current) clearTimeout(tvControlsTimerRef.current);
+    };
+  }, [mode]);
+
   const getSong = async () => {
     try {
       const get = await getSongsById(id);
       const res = await get.json();
       if (res.data?.[0]) {
         const songData = res.data[0];
-        setData(songData);
-        setAudioURL(
+        const nextAudioURL =
           songData.downloadUrl?.[2]?.url ||
-            songData.downloadUrl?.[1]?.url ||
-            songData.downloadUrl?.[0]?.url ||
-            ""
-        );
+          songData.downloadUrl?.[1]?.url ||
+          songData.downloadUrl?.[0]?.url ||
+          "";
+        setData(songData);
+        // Avoid forcing an audio reload when opening overlay/tv for the same track.
+        setAudioURL((prev) => (prev === nextAudioURL ? prev : nextAudioURL));
         return songData;
       } else {
         toast.error("Song not found");
@@ -175,11 +215,9 @@ export default function Player({ id, mode = "page", onClose }) {
         // play() can fail due to autoplay restrictions — handle silently
         console.warn("audio.play() failed:", err);
       });
-      localStorage.setItem("p", "true");
       setPlaying(true);
     } else {
       audio.pause();
-      localStorage.setItem("p", "false");
       setPlaying(false);
     }
   }, []);
@@ -248,10 +286,28 @@ export default function Player({ id, mode = "page", onClose }) {
     }
   };
 
+  const seekToTime = (time) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const maxDuration = Number(duration) || Number(audio.duration) || 0;
+    const safeTime = Math.max(0, Math.min(Number(time) || 0, maxDuration || Number(time) || 0));
+    audio.currentTime = safeTime;
+    setCurrentTime(safeTime);
+    setCurrent(safeTime);
+  };
+
   const handleSeek = (e) => {
-    const seekTime = e[0];
-    if (audioRef.current) audioRef.current.currentTime = seekTime;
-    setCurrentTime(seekTime);
+    const seekTime = Number(e?.[0]) || 0;
+    setIsSeeking(true);
+    setSeekPreviewTime(seekTime);
+  };
+
+  const handleSeekCommit = (e) => {
+    const seekTime = Number(e?.[0]);
+    const finalTime = Number.isFinite(seekTime) ? seekTime : seekPreviewTime;
+    seekToTime(finalTime);
+    setSeekPreviewTime(finalTime);
+    setIsSeeking(false);
   };
 
   const loopSong = () => {
@@ -269,6 +325,20 @@ export default function Player({ id, mode = "page", onClose }) {
       toast.error("Something went wrong!");
     }
   };
+
+  const clockLabel = clockTime.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const remainingSeconds = Math.max(0, (duration || 0) - currentTime);
+  const upcomingSongName = next?.nextData?.name || queue?.[0]?.name || "";
+  const showUpNextBanner =
+    mode === "tv" && remainingSeconds > 0 && remainingSeconds <= 10 && Boolean(upcomingSongName);
+  const tvButtonsVisibilityClass = showTvCloseButton
+    ? "opacity-100"
+    : "opacity-0 pointer-events-none";
 
   const handlePrevious = () => {
     if (!audioRef.current) return;
@@ -289,18 +359,21 @@ export default function Player({ id, mode = "page", onClose }) {
 
   const consumeQueue = (currentNextId) => {
     if (!queue || queue.length === 0) return;
-    const shouldShift = currentNextId && queue[0]?.id === currentNextId;
-    if (!shouldShift) return;
-    const remaining = queue.slice(1);
+    const remaining = queue.filter((song) => song.id !== currentNextId);
     setQueue(remaining);
-    if (remaining[0]) {
+    const candidate = !shuffleEnabled
+      ? remaining[0]
+      : remaining[Math.floor(Math.random() * remaining.length)];
+    if (candidate) {
       next.setNextData({
-        id: remaining[0].id,
-        name: remaining[0].name,
-        artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
-        album: remaining[0].album?.name || "unknown",
-        image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
+        id: candidate.id,
+        name: candidate.name,
+        artist: candidate.artists?.primary?.[0]?.name || "unknown",
+        album: candidate.album?.name || "unknown",
+        image: candidate.image?.[1]?.url || candidate.image?.[0]?.url,
       });
+    } else {
+      next.setNextData(null);
     }
   };
 
@@ -340,7 +413,9 @@ export default function Player({ id, mode = "page", onClose }) {
         const finalData = filtered.length > 0 ? filtered : suggestions.data;
 
         setQueue(finalData);
-        const d = finalData[0]; // Always pick the first unique one
+        const d = !shuffleEnabled
+          ? finalData[0]
+          : finalData[Math.floor(Math.random() * finalData.length)];
         next.setNextData({
           id: d.id,
           name: d.name,
@@ -357,7 +432,6 @@ export default function Player({ id, mode = "page", onClose }) {
   useEffect(() => {
     const run = async () => {
       const songMeta = await getSong();
-      localStorage.removeItem("p");
 
       let updatedHistory = [...history];
       if (music && music !== id && updatedHistory[updatedHistory.length - 1] !== music) {
@@ -370,9 +444,14 @@ export default function Player({ id, mode = "page", onClose }) {
 
       getRecommendations(id, updatedHistory, songMeta);
 
-      // Only resume playback position if it's the same song being reloaded
-      if (music === id && current) {
-        if (audioRef.current) audioRef.current.currentTime = parseFloat(current);
+      // Keep playback stable when opening full/mobile player for the currently playing song.
+      if (music === id && current != null) {
+        if (audioRef.current) {
+          const target = Number(current) || 0;
+          if (Math.abs(audioRef.current.currentTime - target) > 1) {
+            audioRef.current.currentTime = target;
+          }
+        }
       } else {
         setCurrent(0);
         setMusic(id);
@@ -399,29 +478,27 @@ export default function Player({ id, mode = "page", onClose }) {
           if (next?.nextData?.id) {
             const nextId = next.nextData.id;
             pushCurrentTrackToHistory(id);
+            setPlaying(true);
+            setPlayRequested(true);
             setMusic(nextId);
             consumeQueue(nextId);
           } else if (queue && queue.length > 0) {
-            const nextSong = queue[0];
+            const nextSong = !shuffleEnabled
+              ? queue[0]
+              : queue[Math.floor(Math.random() * queue.length)];
             pushCurrentTrackToHistory(id);
+            setPlaying(true);
+            setPlayRequested(true);
             setMusic(nextSong.id);
-            const remaining = queue.slice(1);
-            setQueue(remaining);
-            if (remaining[0]) {
-              next.setNextData({
-                id: remaining[0].id,
-                name: remaining[0].name,
-                artist: remaining[0].artists?.primary?.[0]?.name || "unknown",
-                album: remaining[0].album?.name || "unknown",
-                image: remaining[0].image?.[1]?.url || remaining[0].image?.[0]?.url,
-              });
-            }
+            consumeQueue(nextSong.id);
           }
         } else {
           if (next?.nextData?.id) {
             const nextId = next.nextData.id;
             pushCurrentTrackToHistory(id);
             consumeQueue(nextId);
+            setPlaying(true);
+            setPlayRequested(true);
             router.push(`/${nextId}`, { scroll: false });
           }
         }
@@ -429,7 +506,7 @@ export default function Player({ id, mode = "page", onClose }) {
     };
     if (isLooping || duration === 0) return;
     return handleRedirect();
-  }, [currentTime, duration, isLooping, next?.nextData?.id, router, isOverlay, setMusic]);
+  }, [currentTime, duration, isLooping, next?.nextData?.id, router, isOverlay, setMusic, setPlayRequested, setPlaying]);
 
   useEffect(() => {
     if (!lyricsLines.length) {
@@ -486,6 +563,7 @@ export default function Player({ id, mode = "page", onClose }) {
   }, [togglePlayPause]);
 
   if (mode === "tv") {
+    const sliderTime = isSeeking ? seekPreviewTime : currentTime;
     return (
       <div className="relative h-[100vh] w-[100vw] overflow-hidden bg-black text-white">
         <img
@@ -499,21 +577,70 @@ export default function Player({ id, mode = "page", onClose }) {
             <div className="text-xs tracking-[0.2em] uppercase text-white/60">
               Full Screen Mode
             </div>
-            <Button
-              type="button"
-              size="icon"
-              variant="secondary"
-              onClick={() => (onClose ? onClose() : router.push("/", { scroll: false }))}
-              className="h-10 w-10 rounded-full"
-              title="Exit full screen"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <div className="h-16 px-1 flex items-center text-5xl md:text-6xl font-thin tracking-tight text-white">
+                {clockLabel}
+              </div>
+              <Button
+                type="button"
+                size="icon"
+                variant="secondary"
+                onClick={() => (onClose ? onClose() : router.push("/", { scroll: false }))}
+                className={`h-10 w-10 rounded-full transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
+                title="Exit full screen"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <div />
 
           <div className="grid gap-10 items-end">
+            <div className="w-full flex justify-start">
+              <div className="w-[48vw] max-w-[820px] min-h-[280px] text-left">
+                {isLyricsLoading ? (
+                  <div className="text-sm text-white/70 flex items-center gap-2 justify-start">
+                    <span className="inline-block h-2 w-2 rounded-full bg-white/60 animate-pulse" />
+                    Fetching lyrics...
+                  </div>
+                ) : lyricsLines.length > 0 ? (
+                  <div className="relative h-[280px] overflow-hidden">
+                    <div
+                      key={activeLine}
+                      className="absolute inset-0 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                    >
+                      {(lyricsLines.slice(activeLine, activeLine + 3).length
+                        ? lyricsLines.slice(activeLine, activeLine + 3)
+                        : [{ time: Date.now(), text: "..." }]
+                      ).map((line, idx) => (
+                        <div
+                          key={`${line.time}-${idx}`}
+                          className={`leading-tight ${
+                            idx === 0
+                              ? "text-4xl md:text-5xl font-bold text-white drop-shadow-[0_2px_20px_rgba(0,0,0,0.65)]"
+                              : "mt-3 text-3xl md:text-4xl font-semibold text-white/55"
+                          }`}
+                        >
+                          {toHinglish(line.text || "…")}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-lg md:text-xl leading-relaxed text-white/80 whitespace-pre-line">
+                    {toHinglish(
+                      lyricsText ||
+                        data?.lyrics?.lyrics ||
+                        data?.lyrics ||
+                        data?.subtitles ||
+                        "Lyrics are not available for this track."
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
             <div className="grid gap-6 w-full max-w-none">
               <div className="flex items-center gap-4">
                 <img
@@ -531,17 +658,24 @@ export default function Player({ id, mode = "page", onClose }) {
                 </div>
               </div>
 
+              {showUpNextBanner ? (
+                <div className="w-fit rounded-full bg-white/15 px-4 py-1.5 text-sm md:text-base text-white backdrop-blur-sm">
+                  Up next in {Math.ceil(remainingSeconds)}s: {decodeHTML(upcomingSongName)}
+                </div>
+              ) : null}
+
               <div className="grid gap-2 w-full">
                 <Slider
                   onValueChange={handleSeek}
-                  value={[currentTime]}
-                  max={duration || 100}
+                  onValueCommit={handleSeekCommit}
+                  value={[sliderTime]}
+                  max={Math.max(duration || 0, 1)}
                   className="w-full"
                   trackClassName="h-[3px] bg-white/30"
                   thumbClassName="h-4 w-4 bg-white"
                 />
                 <div className="w-full flex items-center justify-between text-xs text-white/70">
-                  <span>{formatTime(currentTime)}</span>
+                  <span>{formatTime(sliderTime)}</span>
                   <span>{formatTime(duration)}</span>
                 </div>
               </div>
@@ -551,7 +685,7 @@ export default function Player({ id, mode = "page", onClose }) {
                   size="icon"
                   variant="ghost"
                   onClick={handlePrevious}
-                  className="rounded-full hover:bg-white/10"
+                  className={`rounded-full hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   title="Previous"
                 >
                   <SkipBack className="h-5 w-5" />
@@ -560,7 +694,7 @@ export default function Player({ id, mode = "page", onClose }) {
                   size="icon"
                   variant="ghost"
                   onClick={() => (audioRef.current.currentTime -= 10)}
-                  className="rounded-full hover:bg-white/10"
+                  className={`rounded-full hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   title="Rewind 10s"
                 >
                   <Rewind className="h-5 w-5" />
@@ -568,7 +702,7 @@ export default function Player({ id, mode = "page", onClose }) {
                 <Button
                   size="icon"
                   variant="default"
-                  className="h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform"
+                  className={`h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   onClick={togglePlayPause}
                 >
                   {playing ? (
@@ -581,7 +715,7 @@ export default function Player({ id, mode = "page", onClose }) {
                   size="icon"
                   variant="ghost"
                   onClick={() => (audioRef.current.currentTime += 10)}
-                  className="rounded-full hover:bg-white/10"
+                  className={`rounded-full hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   title="Fast Forward 10s"
                 >
                   <FastForward className="h-5 w-5" />
@@ -593,13 +727,24 @@ export default function Player({ id, mode = "page", onClose }) {
                     if (next?.nextData?.id) {
                       const nextId = next.nextData.id;
                       pushCurrentTrackToHistory(id);
+                      setPlaying(true);
+                      setPlayRequested(true);
                       setMusic(nextId);
                       consumeQueue(nextId);
+                    } else if (queue && queue.length > 0) {
+                      const nextSong = !shuffleEnabled
+                        ? queue[0]
+                        : queue[Math.floor(Math.random() * queue.length)];
+                      pushCurrentTrackToHistory(id);
+                      setPlaying(true);
+                      setPlayRequested(true);
+                      setMusic(nextSong.id);
+                      consumeQueue(nextSong.id);
                     } else {
                       toast.error("No next song available");
                     }
                   }}
-                  className="rounded-full hover:bg-white/10"
+                  className={`rounded-full hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   title="Next Song"
                 >
                   <SkipForward className="h-5 w-5" />
@@ -609,42 +754,12 @@ export default function Player({ id, mode = "page", onClose }) {
 
             <div />
           </div>
-          <div className="absolute right-10 top-24 max-w-[40vw] text-right">
-            {isLyricsLoading ? (
-              <div className="text-sm text-white/70 flex items-center gap-2 justify-end">
-                <span className="inline-block h-2 w-2 rounded-full bg-white/60 animate-pulse" />
-                Fetching lyrics...
-              </div>
-            ) : lyricsLines.length > 0 ? (
-              <div>
-                    {lyricsLines.slice(activeLine, activeLine + 3).map((line, idx) => (
-                      <div
-                        key={`${line.time}-${idx}`}
-                        className={`text-xl md:text-2xl font-semibold leading-snug ${
-                          idx === 0 ? "text-white" : "text-white/60"
-                        }`}
-                      >
-                        {toHinglish(line.text || "…")}
-                      </div>
-                    ))}
-              </div>
-            ) : (
-              <div className="text-sm leading-relaxed text-white/80 whitespace-pre-line">
-                {toHinglish(
-                  lyricsText ||
-                    data?.lyrics?.lyrics ||
-                    data?.lyrics ||
-                    data?.subtitles ||
-                    "Lyrics are not available for this track."
-                )}
-              </div>
-            )}
-          </div>
         </div>
       </div>
     );
   }
 
+  const sliderTime = isSeeking ? seekPreviewTime : currentTime;
   return (
     <div className={isOverlay ? "mb-3 mt-2 pt-10 sm:pt-6" : "mb-3 mt-10"}>
       <div className="grid gap-6 w-full">
@@ -724,14 +839,15 @@ export default function Player({ id, mode = "page", onClose }) {
               <div className="grid gap-2 w-full mt-5 sm:mt-0">
                 <Slider
                   onValueChange={handleSeek}
-                  value={[currentTime]}
-                  max={duration}
+                  onValueCommit={handleSeekCommit}
+                  value={[sliderTime]}
+                  max={Math.max(duration || 0, 1)}
                   className="w-full"
                   trackClassName="h-[3px] hover:h-[4px] transition-all"
                   thumbClassName="h-4 w-4"
                 />
                 <div className="w-full flex items-center justify-between">
-                  <span className="text-sm">{formatTime(currentTime)}</span>
+                  <span className="text-sm">{formatTime(sliderTime)}</span>
                   <span className="text-sm">{formatTime(duration)}</span>
                 </div>
                 <div className="flex flex-col items-center gap-4 w-full mt-4">
@@ -784,9 +900,28 @@ export default function Player({ id, mode = "page", onClose }) {
                           pushCurrentTrackToHistory(id);
                           consumeQueue(nextId);
                           if (isOverlay) {
+                            setPlaying(true);
+                            setPlayRequested(true);
                             setMusic(nextId);
                           } else {
+                            setPlaying(true);
+                            setPlayRequested(true);
                             router.push(`/${nextId}`, { scroll: false });
+                          }
+                        } else if (queue && queue.length > 0) {
+                          const nextSong = !shuffleEnabled
+                            ? queue[0]
+                            : queue[Math.floor(Math.random() * queue.length)];
+                          pushCurrentTrackToHistory(id);
+                          consumeQueue(nextSong.id);
+                          if (isOverlay) {
+                            setPlaying(true);
+                            setPlayRequested(true);
+                            setMusic(nextSong.id);
+                          } else {
+                            setPlaying(true);
+                            setPlayRequested(true);
+                            router.push(`/${nextSong.id}`, { scroll: false });
                           }
                         } else {
                           toast.error("No next song available");
@@ -799,6 +934,15 @@ export default function Player({ id, mode = "page", onClose }) {
                     </Button>
                   </div>
                   <div className="flex items-center gap-3 sm:gap-4 w-full justify-center">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => setShuffleEnabled((prev) => !prev)}
+                      className={shuffleEnabled ? "text-primary bg-secondary/50" : ""}
+                      title="Shuffle"
+                    >
+                      <Shuffle className="h-4 w-4" />
+                    </Button>
                     <Button
                       size="icon"
                       variant="ghost"
