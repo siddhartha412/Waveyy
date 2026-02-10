@@ -31,6 +31,46 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
   };
 
   const visibleNavItems = user ? navItems : navItems.filter((item) => item.href === "/");
+  const getPlaylistImages = (playlist) => {
+    if (!Array.isArray(playlist?.songs)) return [];
+    return playlist.songs
+      .map((song) => song?.image)
+      .filter(Boolean)
+      .slice(0, 4);
+  };
+
+  const renderPlaylistThumb = (playlist) => {
+    if (isLikedPlaylist?.(playlist.id)) {
+      return (
+        <div className="h-full w-full bg-white flex items-center justify-center">
+          <Heart className="h-4 w-4 fill-current text-blue-500" />
+        </div>
+      );
+    }
+
+    const images = getPlaylistImages(playlist);
+    if (images.length === 0) {
+      return <Library className="h-4 w-4 text-muted-foreground" />;
+    }
+
+    if (images.length === 1) {
+      return <img src={images[0]} alt={playlist.name} className="h-full w-full object-cover" />;
+    }
+
+    const tile = (index) => images[index] || images[images.length - 1];
+    return (
+      <div className="grid h-full w-full grid-cols-2 grid-rows-2 gap-[1px] bg-background/40">
+        {[0, 1, 2, 3].map((index) => (
+          <img
+            key={`${playlist.id}-thumb-${index}`}
+            src={tile(index)}
+            alt=""
+            className="h-full w-full object-cover"
+          />
+        ))}
+      </div>
+    );
+  };
 
   return (
     <aside
@@ -113,13 +153,15 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
                   >
                     {open ? (
                       <>
-                        <div className="truncate flex items-center gap-1.5">
-                          {isLikedPlaylist?.(playlist.id) ? (
-                            <Heart className="h-3.5 w-3.5 fill-current text-red-500" />
-                          ) : null}
-                          <span className="truncate">{playlist.name}</span>
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-secondary/70 flex items-center justify-center">
+                            {renderPlaylistThumb(playlist)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="truncate">{playlist.name}</div>
+                            <div className="text-xs text-muted-foreground">{playlist.songs.length} songs</div>
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">{playlist.songs.length} songs</div>
                       </>
                     ) : (
                       <div

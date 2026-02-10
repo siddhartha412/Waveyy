@@ -297,6 +297,7 @@ export default function MusicProvider({ children }) {
       artist: String(song.artist || "unknown"),
       image: String(song.image || ""),
       playCount: Number(song.playCount) || 0,
+      addedAt: new Date().toISOString(),
     };
     const previous = playlists;
     setPlaylists((prev) =>

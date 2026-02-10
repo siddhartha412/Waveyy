@@ -43,6 +43,7 @@ export default function Player({ id, mode = "page", onClose }) {
   const [seekPreviewTime, setSeekPreviewTime] = useState(0);
   const [clockTime, setClockTime] = useState(() => new Date());
   const [showTvCloseButton, setShowTvCloseButton] = useState(true);
+  const [useLocalAudio, setUseLocalAudio] = useState(false);
   const next = useNextMusicProvider();
   const primaryArtists = (data?.artists?.primary || []).map((a) => a?.name).filter(Boolean);
   const artistLabel = primaryArtists.join(", ") || "unknown";
@@ -83,6 +84,28 @@ export default function Player({ id, mode = "page", onClose }) {
   const lineRefs = useRef([]);
   const recRequestRef = useRef(0);
   const tvControlsTimerRef = useRef(null);
+  const localAudioRef = useRef(null);
+
+  const getAudioElement = () => audioRef.current || localAudioRef.current;
+
+  useEffect(() => {
+    if (!audioRef.current) {
+      setUseLocalAudio(true);
+    }
+  }, [audioRef]);
+
+  useEffect(() => {
+    if (!useLocalAudio) return;
+    if (audioRef.current && audioRef.current !== localAudioRef.current) return;
+    if (localAudioRef.current) {
+      audioRef.current = localAudioRef.current;
+    }
+    return () => {
+      if (audioRef.current === localAudioRef.current) {
+        audioRef.current = null;
+      }
+    };
+  }, [audioRef, useLocalAudio]);
 
   useEffect(() => {
     if (mode !== "tv") return;
@@ -211,7 +234,7 @@ export default function Player({ id, mode = "page", onClose }) {
 
   // make toggle safe if audioRef isn't ready
   const togglePlayPause = useCallback(() => {
-    const audio = audioRef.current;
+    const audio = getAudioElement();
     if (!audio) {
       // nothing to do yet
       setPlaying(false);
@@ -295,7 +318,7 @@ export default function Player({ id, mode = "page", onClose }) {
   };
 
   const seekToTime = (time) => {
-    const audio = audioRef.current;
+    const audio = getAudioElement();
     if (!audio) return;
     const maxDuration = Number(duration) || Number(audio.duration) || 0;
     const safeTime = Math.max(0, Math.min(Number(time) || 0, maxDuration || Number(time) || 0));
@@ -319,8 +342,9 @@ export default function Player({ id, mode = "page", onClose }) {
   };
 
   const loopSong = () => {
-    if (!audioRef.current) return;
-    audioRef.current.loop = !audioRef.current.loop;
+    const audio = getAudioElement();
+    if (!audio) return;
+    audio.loop = !audio.loop;
     setIsLooping(!isLooping);
   };
 
@@ -349,9 +373,10 @@ export default function Player({ id, mode = "page", onClose }) {
     : "opacity-0 pointer-events-none";
 
   const handlePrevious = () => {
-    if (!audioRef.current) return;
-    if (audioRef.current.currentTime > 5) {
-      audioRef.current.currentTime = 0;
+    const audio = getAudioElement();
+    if (!audio) return;
+    if (audio.currentTime > 5) {
+      audio.currentTime = 0;
     } else if (history.length > 0) {
       const prevId = history[history.length - 1];
       setHistory((prev) => prev.slice(0, -1)); // Remove the last item as we are going back to it
@@ -361,7 +386,7 @@ export default function Player({ id, mode = "page", onClose }) {
         router.push(`/${prevId}`, { scroll: false });
       }
     } else {
-      audioRef.current.currentTime = 0;
+      audio.currentTime = 0;
     }
   };
 
@@ -454,17 +479,19 @@ export default function Player({ id, mode = "page", onClose }) {
 
       // Keep playback stable when opening full/mobile player for the currently playing song.
       if (music === id && current != null) {
-        if (audioRef.current) {
+        const audio = getAudioElement();
+        if (audio) {
           const target = Number(current) || 0;
-          if (Math.abs(audioRef.current.currentTime - target) > 1) {
-            audioRef.current.currentTime = target;
+          if (Math.abs(audio.currentTime - target) > 1) {
+            audio.currentTime = target;
           }
         }
       } else {
         setCurrent(0);
         setMusic(id);
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
+        const audio = getAudioElement();
+        if (audio) {
+          audio.currentTime = 0;
         }
       }
       fetchLyrics(songMeta?.name ? songMeta : null);
@@ -543,6 +570,21 @@ export default function Player({ id, mode = "page", onClose }) {
   }, [activeLine]);
 
   // === Spacebar play/pause handler ===
+  useEffect(() => {
+    if (!useLocalAudio) return;
+    const audio = localAudioRef.current;
+    if (!audio) return;
+    const shouldPlay = playRequested || playing;
+    if (shouldPlay) {
+      const res = audio.play();
+      if (res && typeof res.catch === "function") {
+        res.catch(() => setPlaying(false));
+      }
+    } else {
+      audio.pause();
+    }
+  }, [useLocalAudio, audioURL, playRequested, playing, setPlaying]);
+
   useEffect(() => {
     const onKeyDown = (e) => {
       if (e.defaultPrevented) return;
@@ -710,7 +752,11 @@ export default function Player({ id, mode = "page", onClose }) {
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => (audioRef.current.currentTime -= 10)}
+                  onClick={() => {
+                    const audio = getAudioElement();
+                    if (!audio) return;
+                    audio.currentTime = Math.max(0, audio.currentTime - 10);
+                  }}
                   className={`rounded-full hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   title="Rewind 10s"
                 >
@@ -731,7 +777,12 @@ export default function Player({ id, mode = "page", onClose }) {
                 <Button
                   size="icon"
                   variant="ghost"
-                  onClick={() => (audioRef.current.currentTime += 10)}
+                  onClick={() => {
+                    const audio = getAudioElement();
+                    if (!audio) return;
+                    const max = Number(audio.duration) || Infinity;
+                    audio.currentTime = Math.min(max, audio.currentTime + 10);
+                  }}
                   className={`rounded-full hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
                   title="Fast Forward 10s"
                 >
@@ -891,7 +942,11 @@ export default function Player({ id, mode = "page", onClose }) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => (audioRef.current.currentTime -= 10)}
+                      onClick={() => {
+                        const audio = getAudioElement();
+                        if (!audio) return;
+                        audio.currentTime = Math.max(0, audio.currentTime - 10);
+                      }}
                       className="rounded-full hover:bg-secondary/80"
                       title="Rewind 10s"
                     >
@@ -912,7 +967,12 @@ export default function Player({ id, mode = "page", onClose }) {
                     <Button
                       size="icon"
                       variant="ghost"
-                      onClick={() => (audioRef.current.currentTime += 10)}
+                      onClick={() => {
+                        const audio = getAudioElement();
+                        if (!audio) return;
+                        const max = Number(audio.duration) || Infinity;
+                        audio.currentTime = Math.min(max, audio.currentTime + 10);
+                      }}
                       className="rounded-full hover:bg-secondary/80"
                       title="Fast Forward 10s"
                     >
@@ -1019,8 +1079,9 @@ export default function Player({ id, mode = "page", onClose }) {
                             lineRefs.current[idx] = el;
                           }}
                           onClick={() => {
-                            if (audioRef.current) {
-                              audioRef.current.currentTime = line.time;
+                            const audio = getAudioElement();
+                            if (audio) {
+                              audio.currentTime = line.time;
                             }
                           }}
                           className={`text-left w-full py-1 text-sm leading-relaxed transition-colors ${
@@ -1050,6 +1111,36 @@ export default function Player({ id, mode = "page", onClose }) {
           )}
         </div>
       </div>
+      {useLocalAudio ? (
+        <audio
+          ref={localAudioRef}
+          src={audioURL || undefined}
+          autoPlay={playing}
+          onPlay={() => {
+            setPlaying(true);
+            if (playRequested) setPlayRequested(false);
+          }}
+          onPause={() => {
+            if (!playRequested) setPlaying(false);
+          }}
+          onLoadedData={() => {
+            const audio = localAudioRef.current;
+            setDuration(audio?.duration || 0);
+            if (!audio || (!playRequested && !playing)) return;
+            const res = audio.play();
+            if (res && typeof res.catch === "function") {
+              res.catch(() => setPlaying(false));
+            }
+          }}
+          onTimeUpdate={() => {
+            const audio = localAudioRef.current;
+            if (!audio) return;
+            setCurrentTime(audio.currentTime || 0);
+            setCurrent(audio.currentTime || 0);
+            setDuration(audio.duration || 0);
+          }}
+        />
+      ) : null}
     </div>
   );
 }
