@@ -197,6 +197,28 @@ export default function AuthProvider({ children }) {
           options: { redirectTo },
         });
       },
+      connectGoogle: async () => {
+        if (!supabase) {
+          return { error: new Error("Supabase is not configured") };
+        }
+        const configured = process.env.NEXT_PUBLIC_APP_URL;
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const baseUrl = normalizeBaseUrl(configured || origin);
+        const redirectTo = `${baseUrl}/auth/callback`;
+
+        // Link Google identity to current logged-in account.
+        if (user) {
+          return supabase.auth.linkIdentity({
+            provider: "google",
+            options: { redirectTo },
+          });
+        }
+
+        return supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo },
+        });
+      },
       connectDiscord: async () => {
         if (!supabase) {
           return { error: new Error("Supabase is not configured") };

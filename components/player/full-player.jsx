@@ -28,6 +28,7 @@ import { IoPause } from "react-icons/io5";
 import { getLyrics } from "@/lib/lyrics-client";
 import { decodeHTML } from "@/lib/decode-html";
 import { toHinglish } from "@/lib/hinglish";
+import LikeSongButton from "@/components/playlists/like-song-button";
 
 export default function Player({ id, mode = "page", onClose }) {
   // start with an object so checks are straightforward
@@ -45,6 +46,13 @@ export default function Player({ id, mode = "page", onClose }) {
   const next = useNextMusicProvider();
   const primaryArtists = (data?.artists?.primary || []).map((a) => a?.name).filter(Boolean);
   const artistLabel = primaryArtists.join(", ") || "unknown";
+  const likedSongPayload = {
+    id: data?.id || id,
+    name: decodeHTML(data?.name || "Unknown"),
+    artist: decodeHTML(artistLabel),
+    image: data?.image?.[1]?.url || data?.image?.[0]?.url || "",
+    playCount: data?.playCount || 0,
+  };
   const {
     current,
     setCurrent,
@@ -656,6 +664,15 @@ export default function Player({ id, mode = "page", onClose }) {
                     {decodeHTML(artistLabel)}
                   </p>
                 </div>
+                {data?.name ? (
+                  <LikeSongButton
+                    song={likedSongPayload}
+                    size="icon"
+                    variant="ghost"
+                    className={`h-10 w-10 rounded-full text-white hover:bg-white/10 transition-opacity duration-300 ${tvButtonsVisibilityClass}`}
+                    iconClassName="h-5 w-5"
+                  />
+                ) : null}
               </div>
 
               {showUpNextBanner ? (
@@ -834,7 +851,17 @@ export default function Player({ id, mode = "page", onClose }) {
                     )}
                   </p>
                 </div>
-                <div />
+                {data?.name ? (
+                  <LikeSongButton
+                    song={likedSongPayload}
+                    size="icon"
+                    variant="ghost"
+                    className="h-10 w-10 rounded-full"
+                    iconClassName="h-5 w-5"
+                  />
+                ) : (
+                  <div />
+                )}
               </div>
               <div className="grid gap-2 w-full mt-5 sm:mt-0">
                 <Slider

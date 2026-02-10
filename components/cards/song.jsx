@@ -1,12 +1,14 @@
 "use client";
 import Link from "next/link";
 import { Skeleton } from "../ui/skeleton";
-import { useContext, useEffect } from "react";
+import { useContext } from "react";
 import { MusicContext } from "@/hooks/use-context";
 import { IoPlay } from "react-icons/io5";
 import { FaFire } from "react-icons/fa";
 import { decodeHTML } from "@/lib/decode-html";
 import AdaptiveImage from "@/components/ui/adaptive-image";
+import AddToPlaylistButton from "@/components/playlists/add-to-playlist-button";
+import LikeSongButton from "@/components/playlists/like-song-button";
 
 export default function SongCard({ title, image, artist, id, desc, playCount }) {
     const ids = useContext(MusicContext);
@@ -31,6 +33,30 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
                             className="h-[182px] blurz w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-context-menu"
                         />
                         <div className="cursor-pointer absolute z-10 bottom-2 left-2 bg-background/60 backdrop-blur-md rounded-full h-8 w-8 flex items-center justify-center"><IoPlay className="w-4 h-4 -mr-0.5 dark:fill-white" /></div>
+                        <div className="absolute z-10 top-2 left-2">
+                            <LikeSongButton
+                                song={{
+                                    id,
+                                    name: safeTitle,
+                                    artist: safeArtist,
+                                    image,
+                                    playCount,
+                                }}
+                                className="h-8 w-8 rounded-full bg-black/40 text-white hover:bg-black/60"
+                                variant="secondary"
+                            />
+                        </div>
+                        <div className="absolute z-10 bottom-2 right-2">
+                            <AddToPlaylistButton
+                                song={{
+                                    id,
+                                    name: safeTitle,
+                                    artist: safeArtist,
+                                    image,
+                                    playCount,
+                                }}
+                            />
+                        </div>
                         {isPopular && (
                             <div className="absolute top-2 right-2 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">
                                 <FaFire className="w-3 h-3" />

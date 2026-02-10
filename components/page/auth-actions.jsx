@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, LogOut, Plug } from "lucide-react";
+import { Link2, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -34,7 +34,7 @@ const getAvatarFallback = (user) => {
 };
 
 export default function AuthActions({ onMenuOpenChange = () => {} }) {
-  const { user, loading, signOut, discordConnected, connectDiscord } = useAuth();
+  const { user, loading, signOut } = useAuth();
 
   const handleLogout = async () => {
     const { error } = await signOut();
@@ -43,15 +43,6 @@ export default function AuthActions({ onMenuOpenChange = () => {} }) {
       return;
     }
     toast.success("Logged out");
-  };
-
-  const handleConnectDiscord = async () => {
-    const { error } = await connectDiscord();
-    if (error) {
-      toast.error(error.message || "Failed to connect Discord");
-      return;
-    }
-    toast.success("Opening Discord auth...");
   };
 
   if (loading) {
@@ -108,17 +99,12 @@ export default function AuthActions({ onMenuOpenChange = () => {} }) {
         <DropdownMenuLabel className="truncate">{getUserLabel(user)}</DropdownMenuLabel>
         {user?.email && <DropdownMenuLabel className="pt-0 text-xs text-muted-foreground truncate break-all">{user.email}</DropdownMenuLabel>}
         <DropdownMenuSeparator />
-        {discordConnected ? (
-          <DropdownMenuItem className="cursor-default text-emerald-500 focus:text-emerald-500">
-            <Check className="mr-2 h-4 w-4" />
+        <DropdownMenuItem asChild>
+          <Link href="/connections" className="cursor-pointer">
+            <Link2 className="mr-2 h-4 w-4" />
             Connections
-          </DropdownMenuItem>
-        ) : (
-          <DropdownMenuItem onClick={handleConnectDiscord} className="cursor-pointer">
-            <Plug className="mr-2 h-4 w-4" />
-            Connect Discord
-          </DropdownMenuItem>
-        )}
+          </Link>
+        </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
           <LogOut className="mr-2 h-4 w-4" />

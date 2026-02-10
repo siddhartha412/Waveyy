@@ -25,6 +25,8 @@ import { decodeHTML } from "@/lib/decode-html";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/use-auth";
+import { usePathname } from "next/navigation";
+import LikeSongButton from "@/components/playlists/like-song-button";
 
 export default function Player() {
   const [mounted, setMounted] = useState(false);
@@ -36,6 +38,8 @@ export default function Player() {
   const recRequestRef = useRef(0);
   const discordLastPublishKeyRef = useRef("");
   const isDesktop = useMediaQuery("(min-width: 1024px)");
+  const pathname = usePathname();
+  const isAuthPage = pathname === "/login" || pathname === "/signup";
   const {
     music,
     setMusic,
@@ -505,6 +509,15 @@ export default function Player() {
     .map((a) => a?.name)
     .filter(Boolean);
   const safeArtist = decodeHTML(artistNames.join(", ") || "");
+  const likedSongPayload = data
+    ? {
+        id: data.id || music,
+        name: safeTitle || data.name || "Unknown",
+        artist: safeArtist || artistNames.join(", ") || "unknown",
+        image: data.image?.[1]?.url || data.image?.[0]?.url || "",
+        playCount: data.playCount || 0,
+      }
+    : null;
 
   return (
     <>
@@ -520,7 +533,9 @@ export default function Player() {
       )}
 
       {(!playerOpen || isDesktop) && !tvOpen && (
-      <div className="fixed bottom-0 left-0 right-0 lg:right-[360px] z-[100] bg-background/95 backdrop-blur-md border-t border-border shadow-2xl h-[72px] sm:h-24 flex flex-col">
+      <div className={`fixed left-0 right-0 lg:right-[360px] z-[100] bg-background/95 backdrop-blur-md border-t border-border shadow-2xl h-[72px] sm:h-24 flex flex-col ${
+        !isDesktop && !isAuthPage ? "bottom-14" : "bottom-0"
+      }`}>
         <div className="absolute top-0 left-0 right-0 -translate-y-[2px] px-0">
           <Slider
             thumbClassName="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -555,6 +570,14 @@ export default function Player() {
                     {safeArtist}
                   </p>
                 </div>
+                {likedSongPayload ? (
+                  <LikeSongButton
+                    song={likedSongPayload}
+                    size="icon"
+                    variant="ghost"
+                    className="hidden md:inline-flex h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
+                  />
+                ) : null}
               </>
             ) : (
               <div className="flex items-center gap-2">
