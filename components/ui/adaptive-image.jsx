@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { toWebpUrl } from "@/lib/image-url";
+import { toSaavnJpgUrl, toWebpUrl } from "@/lib/image-url";
 
 export default function AdaptiveImage({
   src,
@@ -12,6 +12,7 @@ export default function AdaptiveImage({
   decoding = "async",
 }) {
   const webpSrc = useMemo(() => toWebpUrl(src), [src]);
+  const saavnJpgSrc = useMemo(() => toSaavnJpgUrl(src), [src]);
   const initial = webpSrc || src || fallbackSrc;
   const [currentSrc, setCurrentSrc] = useState(initial);
 
@@ -22,6 +23,10 @@ export default function AdaptiveImage({
   const handleError = () => {
     if (currentSrc !== src && src) {
       setCurrentSrc(src);
+      return;
+    }
+    if (saavnJpgSrc && currentSrc !== saavnJpgSrc) {
+      setCurrentSrc(saavnJpgSrc);
       return;
     }
     if (currentSrc !== fallbackSrc) {
@@ -40,4 +45,3 @@ export default function AdaptiveImage({
     />
   );
 }
-

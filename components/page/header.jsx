@@ -24,7 +24,7 @@ export default function Header({ sidebarOpen = true, onToggleSidebar = () => {} 
       className={`border-b border-border/60 px-5 py-5 md:px-20 lg:px-32 ${
         !isAuthPage ? (sidebarOpen ? "lg:pl-[282px]" : "lg:pl-[98px]") : ""
       } ${
-        music && isDesktop && !isAuthPage ? "lg:pr-[392px]" : ""
+        music && isDesktop && !isAuthPage ? "lg:pr-[360px]" : ""
       }`}
     >
       <div className="flex w-full items-center gap-3">
@@ -45,8 +45,8 @@ export default function Header({ sidebarOpen = true, onToggleSidebar = () => {} 
           </div>
         ) : null}
 
-        <div className="hidden sm:flex flex-1 items-center justify-end gap-3">
-          <div className="w-full max-w-md">
+        <div className="hidden sm:flex min-w-0 flex-1 items-center justify-end gap-3">
+          <div className="w-full max-w-[520px]">
             <Search />
           </div>
         </div>

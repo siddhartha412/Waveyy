@@ -7,6 +7,7 @@ import MobileMenu from "@/components/mobile-menu";
 import MusicProvider from "@/components/providers/music-provider";
 import NextProvider from "@/components/providers/next-provider";
 import AuthProvider from "@/components/providers/auth-provider";
+import ServiceWorkerReset from "@/components/dev/sw-reset";
 
 const bricolage_grotesque = Bricolage_Grotesque({
   subsets: ["latin"],
@@ -30,6 +31,7 @@ export default function RootLayout({ children }) {
           enableSystem
           disableTransitionOnChange
         >
+          <ServiceWorkerReset />
           <NextTopLoader
             color="hsl(var(--primary))"
             initialPosition={0.08}

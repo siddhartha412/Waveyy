@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const sidebarPadding = sidebarOpen ? "lg:pl-[282px]" : "lg:pl-[98px]";
-    const rightPlayerPadding = music && isDesktop ? "lg:pr-[392px]" : "";
+    const rightPlayerPadding = music && isDesktop ? "lg:pr-[360px]" : "";
 
     useEffect(() => {
         if (handledAuthErrorRef.current) return;

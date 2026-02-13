@@ -75,6 +75,11 @@
     display: none !important;
   }
 
+  /* Force-hide mobile bottom nav whenever any dialog is open (mobile full player overlay). */
+  main:has([role="dialog"][data-state="open"]) .waveyy-mobile-bottom-nav {
+    display: none !important;
+  }
+
   ::-webkit-scrollbar {
     @apply w-0 h-0;
   }

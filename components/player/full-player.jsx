@@ -68,6 +68,7 @@ export default function Player({ id, mode = "page", onClose }) {
     downloadProgress,
     queue,
     audioRef,
+    playRequested,
     playing,
     setPlaying,
     setPlayRequested,
@@ -199,7 +200,9 @@ export default function Player({ id, mode = "page", onClose }) {
       }
     }
 
-    return result.sort((a, b) => a.time - b.time);
+    return result
+      .filter((line) => Boolean(line.text && line.text.trim().length > 0))
+      .sort((a, b) => a.time - b.time);
   };
 
   const fetchLyrics = async (songData) => {

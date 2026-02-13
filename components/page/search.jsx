@@ -78,7 +78,7 @@ export default function Search() {
     }
 
     return (
-        <div ref={containerRef} className="relative z-[110] w-full max-w-md mx-auto">
+        <div ref={containerRef} className="relative z-[110] w-full">
             <form onSubmit={handleSubmit} className="flex items-center relative w-full">
                 <Button
                     variant="ghost"

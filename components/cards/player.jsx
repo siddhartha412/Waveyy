@@ -24,7 +24,6 @@ import SidebarPlayer from "@/components/player/sidebar-player";
 import { decodeHTML } from "@/lib/decode-html";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { toast } from "sonner";
-import { useAuth } from "@/hooks/use-auth";
 import { usePathname } from "next/navigation";
 import LikeSongButton from "@/components/playlists/like-song-button";
 
@@ -36,7 +35,6 @@ export default function Player() {
   const [tvOpen, setTvOpen] = useState(false);
   const closeTimerRef = useRef(null);
   const recRequestRef = useRef(0);
-  const discordLastPublishKeyRef = useRef("");
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const pathname = usePathname();
   const isAuthPage = pathname === "/login" || pathname === "/signup";
@@ -66,7 +64,6 @@ export default function Player() {
     setAudioURL,
   } = useMusicProvider();
   const next = useNextMusicProvider();
-  const { user, discordConnected } = useAuth();
 
   useEffect(() => {
     setMounted(true);
@@ -107,62 +104,6 @@ export default function Player() {
       document.exitFullscreen?.().catch(() => {});
     }
   }, [tvOpen]);
-
-  const publishDiscordActivity = async (payload) => {
-    try {
-      await fetch("/api/discord/activity", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } catch {
-      // ignore bridge failures: player should never break because of RPC
-    }
-  };
-
-  useEffect(() => {
-    if (!mounted) return;
-    if (!user || !discordConnected) {
-      const clearKey = "inactive";
-      if (discordLastPublishKeyRef.current !== clearKey) {
-        discordLastPublishKeyRef.current = clearKey;
-        publishDiscordActivity({ active: false });
-      }
-      return;
-    }
-
-    const activeSongId = data?.id || music || null;
-    if (!activeSongId || !data) {
-      const clearKey = "inactive";
-      if (discordLastPublishKeyRef.current !== clearKey) {
-        discordLastPublishKeyRef.current = clearKey;
-        publishDiscordActivity({ active: false });
-      }
-      return;
-    }
-
-    const artistNames = (data?.artists?.primary || [])
-      .map((artist) => artist?.name)
-      .filter(Boolean)
-      .join(", ");
-    const positionBucket = Math.floor((Number(currentTime) || 0) / 15);
-    const publishKey = `${activeSongId}:${playing ? "playing" : "paused"}:${positionBucket}`;
-    if (discordLastPublishKeyRef.current === publishKey) return;
-
-    discordLastPublishKeyRef.current = publishKey;
-    publishDiscordActivity({
-      active: true,
-      userId: user.id,
-      songId: activeSongId,
-      title: decodeHTML(data?.name || "Unknown Track"),
-      artist: decodeHTML(artistNames || "Unknown Artist"),
-      album: decodeHTML(data?.album?.name || ""),
-      playing: Boolean(playing),
-      durationSeconds: Number(duration) || 0,
-      positionSeconds: Number(currentTime) || 0,
-      updatedAt: Date.now(),
-    });
-  }, [mounted, user, discordConnected, music, data, playing, duration, currentTime]);
 
   const finalizeClosePlayer = () => {
     if (audioRef.current) {

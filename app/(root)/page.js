@@ -77,6 +77,89 @@ const toArtistLabel = (song) =>
 
 const toImage = (song) => song.image?.[2]?.url || song.image?.[1]?.url;
 
+const normalizeText = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/&amp;/g, "and")
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const TRENDING_ARTIST_BLOCKLIST = [
+  /top \d+/i,
+  /top hit music charts/i,
+  /todays hits/i,
+  /chart hits allstars/i,
+  /summer hit superstars/i,
+  /dance hits \d+/i,
+  /pop tracks/i,
+];
+
+const TRENDING_ALBUM_BLOCKLIST = [
+  /big chart/i,
+  /massive chart/i,
+  /vital pop/i,
+  /ultimate noughties/i,
+  /top chart/i,
+  /chart tunes/i,
+  /superstars/i,
+  /monsoon bollywood hits/i,
+  /bollywood party hits/i,
+  /essentials/i,
+];
+
+const TRENDING_TITLE_BLOCKLIST = [
+  /trending version/i,
+  /slowed/i,
+  /reverb/i,
+  /nightcore/i,
+  /8d/i,
+];
+
+const getPrimaryArtistNames = (song) =>
+  (song?.artists?.primary || []).map((artist) => artist?.name).filter(Boolean);
+
+const isSyntheticTrendingSong = (song) => {
+  const artistBlob = normalizeText(getPrimaryArtistNames(song).join(" "));
+  const albumName = normalizeText(song?.album?.name || "");
+  const title = normalizeText(song?.name || "");
+
+  if (!song?.id || !song?.name || !song?.image) return true;
+  if (!artistBlob) return true;
+
+  if (TRENDING_TITLE_BLOCKLIST.some((pattern) => pattern.test(title))) return true;
+  if (TRENDING_ARTIST_BLOCKLIST.some((pattern) => pattern.test(artistBlob))) return true;
+  if (TRENDING_ALBUM_BLOCKLIST.some((pattern) => pattern.test(albumName))) return true;
+
+  return false;
+};
+
+const curateTrendingSongs = (songs = [], limit = 20, existingTrackKeys = new Set()) => {
+  const selected = [];
+  const seenIds = new Set();
+  const seenTracks = new Set(existingTrackKeys);
+
+  const ranked = [...songs].sort(
+    (a, b) => (Number(b?.playCount) || 0) - (Number(a?.playCount) || 0)
+  );
+
+  for (const song of ranked) {
+    if (!song?.id || seenIds.has(song.id)) continue;
+    if (isSyntheticTrendingSong(song)) continue;
+
+    const trackKey = normalizeText(song.name);
+    if (seenTracks.has(trackKey)) continue;
+
+    seenIds.add(song.id);
+    seenTracks.add(trackKey);
+    selected.push(song);
+
+    if (selected.length >= limit) break;
+  }
+
+  return { songs: selected, trackKeys: seenTracks };
+};
+
 export default function Page() {
   const { playLog, music } = useMusicProvider();
   const { user, loading: authLoading } = useAuth();
@@ -266,14 +349,46 @@ export default function Page() {
         if (!res.ok) throw new Error("Top charts failed");
         const data = await res.json();
         const collected = [];
-        extractSongs(data, collected, new Set(), 20);
-        if (collected.length === 0) throw new Error("No charts data");
-        setTrending(collected);
+        extractSongs(data, collected, new Set(), 120);
+
+        let { songs: cleanedTrending, trackKeys } = curateTrendingSongs(collected, 20);
+
+        if (cleanedTrending.length < 20) {
+          const fallbackSources = [
+            { query: "arijit singh hits", max: 5 },
+            { query: "bollywood hits", max: 5 },
+            { query: "punjabi hits", max: 5 },
+            { query: "latest tamil hits", max: 5 },
+            { query: "telugu hits", max: 5 },
+          ];
+
+          for (const source of fallbackSources) {
+            if (cleanedTrending.length >= 20) break;
+            try {
+              const fallbackRes = await getSongsByQuery(source.query, 20);
+              const fallbackData = await fallbackRes.json();
+              const fallbackSongs = fallbackData?.data?.results || [];
+              const picked = curateTrendingSongs(
+                fallbackSongs,
+                Math.min(source.max, 20 - cleanedTrending.length),
+                trackKeys
+              );
+              cleanedTrending = [...cleanedTrending, ...picked.songs];
+              trackKeys = picked.trackKeys;
+            } catch {
+              // Ignore query failure and continue with next fallback.
+            }
+          }
+        }
+
+        if (cleanedTrending.length === 0) throw new Error("No clean charts data");
+        setTrending(cleanedTrending);
       } catch {
         try {
           const fallback = await getSongsByQuery("Top Hits", 20);
           const fallbackData = await fallback.json();
-          setTrending(fallbackData?.data?.results || []);
+          const cleanedFallback = curateTrendingSongs(fallbackData?.data?.results || [], 20);
+          setTrending(cleanedFallback.songs);
         } catch {
           setTrending([]);
         }

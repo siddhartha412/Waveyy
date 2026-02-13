@@ -27,7 +27,9 @@ const parseLrc = (lrcText = "") => {
     }
   }
 
-  return result.sort((a, b) => a.time - b.time);
+  return result
+    .filter((line) => Boolean(line.text && line.text.trim().length > 0))
+    .sort((a, b) => a.time - b.time);
 };
 
 export default function SidebarPlayer() {
@@ -153,7 +155,7 @@ export default function SidebarPlayer() {
           </div>
         ) : lyricsLines.length > 0 ? (
           <div ref={containerRef} className="mt-4 h-full overflow-y-auto pr-2">
-            <div className="py-20">
+            <div className="pt-6 pb-14">
               {lyricsLines.map((line, idx) => (
                 <button
                   key={`${line.time}-${idx}`}
