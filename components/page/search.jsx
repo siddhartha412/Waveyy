@@ -68,7 +68,7 @@ export default function Search() {
         setIsFocused(false);
         setQuery("");
         setMusic(id);
-        setPlayerOpen(true);
+        setPlayerOpen(false);
         setPlayRequested(true);
     };
 

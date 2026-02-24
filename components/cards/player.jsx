@@ -7,7 +7,6 @@ import {
   Repeat,
   Repeat1,
   Rewind,
-  Shuffle,
   SkipBack,
   SkipForward,
   X,
@@ -26,6 +25,7 @@ import { useMediaQuery } from "@/hooks/use-media-query";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import LikeSongButton from "@/components/playlists/like-song-button";
+import { selectBestAudioUrl } from "@/lib/audio-quality";
 
 export default function Player() {
   const [mounted, setMounted] = useState(false);
@@ -52,7 +52,6 @@ export default function Player() {
     playRequested,
     setPlayRequested,
     shuffleEnabled,
-    setShuffleEnabled,
     audioRef,
     playing,
     setPlaying,
@@ -160,8 +159,7 @@ export default function Player() {
       if (res.data?.[0]) {
         const song = res.data[0];
         setData(song);
-        const urls = song.downloadUrl;
-        setAudioURL(urls[2]?.url || urls[1]?.url || urls[0]?.url || "");
+        setAudioURL(selectBestAudioUrl(song.downloadUrl));
         return song;
       }
     } catch (e) {
@@ -195,17 +193,38 @@ export default function Player() {
           (s) => s.id !== songId && !history.includes(s.id)
         );
         const finalData = filtered.length > 0 ? filtered : suggestions.data;
-        setQueue(finalData);
-        const d = shuffleEnabled
-          ? finalData[Math.floor(Math.random() * finalData.length)]
-          : finalData[0];
-        next.setNextData({
-          id: d.id,
-          name: d.name,
-          artist: d.artists.primary[0]?.name || "unknown",
-          album: d.album?.name || "unknown",
-          image: d.image[1].url,
-        });
+
+        const existingQueue = Array.isArray(queue) ? queue : [];
+        if (existingQueue.length === 0) {
+          setQueue(finalData);
+          const d = shuffleEnabled
+            ? finalData[Math.floor(Math.random() * finalData.length)]
+            : finalData[0];
+          next.setNextData({
+            id: d.id,
+            name: d.name,
+            artist: d.artists.primary[0]?.name || "unknown",
+            album: d.album?.name || "unknown",
+            image: d.image[1].url,
+          });
+          return;
+        }
+
+        // Keep user queue stable across song changes.
+        if (!next?.nextData?.id) {
+          const d = shuffleEnabled
+            ? existingQueue[Math.floor(Math.random() * existingQueue.length)]
+            : existingQueue[0];
+          if (d) {
+            next.setNextData({
+              id: d.id,
+              name: d.name,
+              artist: d.artists?.primary?.[0]?.name || "unknown",
+              album: d.album?.name || "unknown",
+              image: d.image?.[1]?.url || d.image?.[0]?.url,
+            });
+          }
+        }
       }
     } catch (e) {
       console.error("Failed to fetch suggestions", e);
@@ -614,15 +633,6 @@ export default function Player() {
             <Button
               size="icon"
               variant="ghost"
-              onClick={() => setShuffleEnabled((prev) => !prev)}
-              className={`h-9 w-9 ${shuffleEnabled ? "text-primary bg-primary/10" : "text-muted-foreground"}`}
-              title="Shuffle"
-            >
-              <Shuffle className="h-4 w-4" />
-            </Button>
-            <Button
-              size="icon"
-              variant="ghost"
               onClick={() => {
                 setIsLooping(!isLooping);
                 if (audioRef.current) audioRef.current.loop = !isLooping;
@@ -677,7 +687,7 @@ export default function Player() {
       />
       {!isDesktop && (
         <Dialog open={playerOpen} onOpenChange={setPlayerOpen}>
-          <DialogContent className="w-[100vw] h-[100vh] max-w-none rounded-none overflow-y-auto p-0 bg-background">
+          <DialogContent className="!left-0 !top-0 !translate-x-0 !translate-y-0 w-screen h-[100dvh] max-w-none rounded-none overflow-y-auto overflow-x-hidden p-0 bg-background border-0">
             <DialogTitle className="sr-only">Mobile Player</DialogTitle>
             <div className="relative pt-14 sm:pt-6">
               <Button

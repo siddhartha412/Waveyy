@@ -7,10 +7,8 @@ import { usePathname } from "next/navigation";
 import { useMusicProvider } from "@/hooks/use-context";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import AuthActions from "./auth-actions";
-import { Button } from "@/components/ui/button";
-import { PanelLeft } from "lucide-react";
 
-export default function Header({ sidebarOpen = true, onToggleSidebar = () => {} }) {
+export default function Header({ sidebarOpen = true }) {
   const path = usePathname();
   const { playerOpen, music } = useMusicProvider();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
@@ -28,17 +26,6 @@ export default function Header({ sidebarOpen = true, onToggleSidebar = () => {} 
       }`}
     >
       <div className="flex w-full items-center gap-3">
-        {!isAuthPage && isDesktop ? (
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-9 w-9 shrink-0"
-            onClick={onToggleSidebar}
-            title={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
-          >
-            <PanelLeft className="h-4 w-4" />
-          </Button>
-        ) : null}
         {(isAuthPage || !isDesktop || sidebarOpen) ? (
           <div className="shrink-0">
             <Logo />

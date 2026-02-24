@@ -7,6 +7,7 @@ import { getLyrics } from "@/lib/lyrics-client";
 import { useMusicProvider } from "@/hooks/use-context";
 import { decodeHTML } from "@/lib/decode-html";
 import { toHinglish } from "@/lib/hinglish";
+import QueueList from "@/components/player/queue-list";
 
 const parseLrc = (lrcText = "") => {
   const lines = lrcText.split("\n");
@@ -140,47 +141,50 @@ export default function SidebarPlayer() {
         )}
       </div>
 
-      <div className="flex-1 p-5 overflow-hidden">
-        <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-          Lyrics
-        </div>
-        {!music ? (
-          <div className="mt-4 text-sm text-muted-foreground">
-            Pick a song to see lyrics here.
+      <div className="flex-1 p-5 overflow-y-auto overflow-x-hidden grid grid-rows-[minmax(0,1fr)_auto] gap-4">
+        <div className="min-h-0 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 p-4">
+          <div className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+            Lyrics
           </div>
-        ) : isLyricsLoading ? (
-          <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
-            <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
-            Fetching lyrics...
-          </div>
-        ) : lyricsLines.length > 0 ? (
-          <div ref={containerRef} className="mt-4 h-full overflow-y-auto pr-2">
-            <div className="pt-6 pb-14">
-              {lyricsLines.map((line, idx) => (
-                <button
-                  key={`${line.time}-${idx}`}
-                  ref={(el) => {
-                    lineRefs.current[idx] = el;
-                  }}
-                  onClick={() => {
-                    if (audioRef.current) audioRef.current.currentTime = line.time;
-                  }}
-                  className={`block w-full text-left py-1.5 text-sm leading-relaxed transition-colors ${
-                    idx === activeLine
-                      ? "text-foreground font-semibold"
-                      : "text-foreground/60"
-                  }`}
-                >
-                  {toHinglish(line.text || "…")}
-                </button>
-              ))}
+          {!music ? (
+            <div className="mt-4 text-sm text-muted-foreground">
+              Pick a song to see lyrics here.
             </div>
-          </div>
-        ) : (
-          <div className="mt-4 text-sm text-foreground/80 whitespace-pre-line">
-            {toHinglish(lyricsText) || "Lyrics are not available for this track."}
-          </div>
-        )}
+          ) : isLyricsLoading ? (
+            <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
+              <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
+              Fetching lyrics...
+            </div>
+          ) : lyricsLines.length > 0 ? (
+            <div ref={containerRef} className="mt-4 h-[calc(100%-1.5rem)] overflow-y-auto pr-2">
+              <div className="pt-6 pb-14">
+                {lyricsLines.map((line, idx) => (
+                  <button
+                    key={`${line.time}-${idx}`}
+                    ref={(el) => {
+                      lineRefs.current[idx] = el;
+                    }}
+                    onClick={() => {
+                      if (audioRef.current) audioRef.current.currentTime = line.time;
+                    }}
+                    className={`block w-full text-left py-1.5 text-sm leading-relaxed transition-colors ${
+                      idx === activeLine
+                        ? "text-foreground font-semibold"
+                        : "text-foreground/60"
+                    }`}
+                  >
+                    {toHinglish(line.text || "…")}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 text-sm text-foreground/80 whitespace-pre-line">
+              {toHinglish(lyricsText) || "Lyrics are not available for this track."}
+            </div>
+          )}
+        </div>
+        <QueueList compact className="p-4" />
       </div>
     </div>
   );

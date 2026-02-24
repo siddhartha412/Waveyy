@@ -2,14 +2,12 @@
 import { Button } from "@/components/ui/button";
 import { getSongsById, getSongsSuggestions, getSpotifyRecommendations } from "@/lib/fetch";
 import {
-  Download,
   Play,
   Repeat,
   Repeat1,
   Share2,
   Rewind,
   FastForward,
-  Shuffle,
   SkipBack,
   SkipForward,
   X,
@@ -29,11 +27,12 @@ import { getLyrics } from "@/lib/lyrics-client";
 import { decodeHTML } from "@/lib/decode-html";
 import { toHinglish } from "@/lib/hinglish";
 import LikeSongButton from "@/components/playlists/like-song-button";
+import { selectBestAudioUrl } from "@/lib/audio-quality";
+import QueueList from "@/components/player/queue-list";
 
 export default function Player({ id, mode = "page", onClose }) {
   // start with an object so checks are straightforward
   const [data, setData] = useState({});
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [lyricsLines, setLyricsLines] = useState([]);
   const [lyricsText, setLyricsText] = useState("");
@@ -63,9 +62,6 @@ export default function Player({ id, mode = "page", onClose }) {
     setHistory,
     setQueue,
     shuffleEnabled,
-    setShuffleEnabled,
-    setDownloadProgress,
-    downloadProgress,
     queue,
     audioRef,
     playRequested,
@@ -156,11 +152,7 @@ export default function Player({ id, mode = "page", onClose }) {
       const res = await get.json();
       if (res.data?.[0]) {
         const songData = res.data[0];
-        const nextAudioURL =
-          songData.downloadUrl?.[2]?.url ||
-          songData.downloadUrl?.[1]?.url ||
-          songData.downloadUrl?.[0]?.url ||
-          "";
+        const nextAudioURL = selectBestAudioUrl(songData.downloadUrl);
         setData(songData);
         // Avoid forcing an audio reload when opening overlay/tv for the same track.
         setAudioURL((prev) => (prev === nextAudioURL ? prev : nextAudioURL));
@@ -255,70 +247,6 @@ export default function Player({ id, mode = "page", onClose }) {
       setPlaying(false);
     }
   }, []);
-
-  const downloadSong = async () => {
-    if (!audioURL) {
-      toast.error("No audio URL to download");
-      return;
-    }
-
-    if (isDownloading) {
-      setDownloadProgress(0);
-      setIsDownloading(false);
-      return;
-    }
-    setIsDownloading(true);
-    setDownloadProgress(0);
-
-    try {
-      const response = await fetch(audioURL);
-      if (!response.ok) throw new Error("Failed to fetch");
-
-      const contentLength = response.headers.get("Content-Length");
-      if (!contentLength) {
-        console.warn("No Content-Length header, can't show progress accurately.");
-      }
-
-      const total = contentLength ? parseInt(contentLength, 10) : 0;
-      let loaded = 0;
-
-      const reader = response.body.getReader();
-      const chunks = [];
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) {
-          chunks.push(value);
-          loaded += value.length;
-
-          if (total) {
-            const progress = Math.round((loaded / total) * 100);
-            setDownloadProgress(progress);
-          }
-        }
-      }
-
-      // Combine chunks into a blob
-      const blob = new Blob(chunks);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      // use decoded name for filename
-      const decodedName = decodeHTML(data.name || "song");
-      a.download = `${decodedName}.mp3`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      toast.success("Downloaded!");
-    } catch (err) {
-      console.error("Download failed:", err);
-      toast.error("Download failed");
-    } finally {
-      setIsDownloading(false);
-      setDownloadProgress(0);
-    }
-  };
 
   const seekToTime = (time) => {
     const audio = getAudioElement();
@@ -448,17 +376,37 @@ export default function Player({ id, mode = "page", onClose }) {
         );
         const finalData = filtered.length > 0 ? filtered : suggestions.data;
 
-        setQueue(finalData);
-        const d = !shuffleEnabled
-          ? finalData[0]
-          : finalData[Math.floor(Math.random() * finalData.length)];
-        next.setNextData({
-          id: d.id,
-          name: d.name,
-          artist: d.artists.primary[0]?.name || "unknown",
-          album: d.album?.name || "unknown",
-          image: d.image[1].url,
-        });
+        const existingQueue = Array.isArray(queue) ? queue : [];
+        if (existingQueue.length === 0) {
+          setQueue(finalData);
+          const d = !shuffleEnabled
+            ? finalData[0]
+            : finalData[Math.floor(Math.random() * finalData.length)];
+          next.setNextData({
+            id: d.id,
+            name: d.name,
+            artist: d.artists.primary[0]?.name || "unknown",
+            album: d.album?.name || "unknown",
+            image: d.image[1].url,
+          });
+          return;
+        }
+
+        // Keep queue consistent while browsing/changing tracks.
+        if (!next?.nextData?.id) {
+          const d = !shuffleEnabled
+            ? existingQueue[0]
+            : existingQueue[Math.floor(Math.random() * existingQueue.length)];
+          if (d) {
+            next.setNextData({
+              id: d.id,
+              name: d.name,
+              artist: d.artists?.primary?.[0]?.name || "unknown",
+              album: d.album?.name || "unknown",
+              image: d.image?.[1]?.url || d.image?.[0]?.url,
+            });
+          }
+        }
       }
     } catch (e) {
       console.error("Failed to fetch suggestions", e);
@@ -832,22 +780,22 @@ export default function Player({ id, mode = "page", onClose }) {
 
   const sliderTime = isSeeking ? seekPreviewTime : currentTime;
   return (
-    <div className={isOverlay ? "mb-3 mt-2 pt-10 sm:pt-6" : "mb-3 mt-10"}>
-      <div className="grid gap-6 w-full">
-        <div className="grid gap-5 w-full px-4 sm:px-6 md:px-10 lg:px-16 sm:flex sm:items-start max-w-4xl mx-auto">
-          <div>
+    <div className={isOverlay ? "mb-3 mt-2 pt-6 sm:pt-6" : "mb-3 mt-6 sm:mt-10"}>
+      <div className="grid gap-6 w-full overflow-x-hidden">
+        <div className="grid w-full max-w-4xl mx-auto gap-5 px-4 sm:px-6 md:px-10 lg:px-16 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-start sm:gap-6">
+          <div className="mx-auto w-full max-w-[320px] sm:mx-0 sm:max-w-none sm:w-[200px]">
             {!data.name ? (
-              <Skeleton className="md:w-[130px] aspect-square rounded-2xl md:h-[150px]" />
+              <Skeleton className="w-full aspect-square rounded-2xl" />
             ) : (
-              <div className="relative">
+              <div className="relative w-full">
                 <img
                   src={data.image?.[2]?.url}
-                  className="sm:h-[150px] h-full aspect-square bg-secondary/50 rounded-2xl sm:w-[200px] w-full sm:mx-0 mx-auto object-cover"
+                  className="w-full aspect-square bg-secondary/50 rounded-2xl object-contain"
                   alt={decodeHTML(data.name)}
                 />
                 <img
                   src={data.image?.[2]?.url}
-                  className="hidden dark:block absolute top-0 left-0 w-[110%] h-[110%] blur-3xl -z-10 opacity-50"
+                  className="hidden dark:block absolute top-0 left-0 w-[110%] h-[110%] blur-3xl -z-10 opacity-50 pointer-events-none"
                   alt=""
                 />
               </div>
@@ -873,7 +821,7 @@ export default function Player({ id, mode = "page", onClose }) {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col justify-between w-full">
+            <div className="flex flex-col justify-between w-full min-w-0">
               <div className="sm:mt-0 mt-3 flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <h1 className="text-xl font-bold md:max-w-lg">
@@ -923,24 +871,24 @@ export default function Player({ id, mode = "page", onClose }) {
                   onValueCommit={handleSeekCommit}
                   value={[sliderTime]}
                   max={Math.max(duration || 0, 1)}
-                  className="w-full"
+                  className="w-full min-w-0"
                   trackClassName="h-[3px] hover:h-[4px] transition-all"
                   thumbClassName="h-4 w-4"
                 />
-                <div className="w-full flex items-center justify-between">
+                <div className="w-full flex items-center justify-between px-0.5">
                   <span className="text-sm">{formatTime(sliderTime)}</span>
                   <span className="text-sm">{formatTime(duration)}</span>
                 </div>
-                <div className="flex flex-col items-center gap-4 w-full mt-4">
-                  <div className="flex items-center gap-4 sm:gap-6">
+                <div className="flex flex-col items-center gap-3 w-full mt-4">
+                  <div className="grid w-full max-w-[340px] grid-cols-5 items-center gap-1.5 sm:max-w-none sm:grid-cols-none sm:flex sm:justify-center sm:gap-6">
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={handlePrevious}
-                      className="rounded-full hover:bg-secondary/80 flex"
+                      className="mx-auto h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-secondary/80 flex"
                       title="Previous"
                     >
-                      <SkipBack className="h-5 w-5" />
+                      <SkipBack className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                     <Button
                       size="icon"
@@ -950,21 +898,21 @@ export default function Player({ id, mode = "page", onClose }) {
                         if (!audio) return;
                         audio.currentTime = Math.max(0, audio.currentTime - 10);
                       }}
-                      className="rounded-full hover:bg-secondary/80"
+                      className="mx-auto h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-secondary/80"
                       title="Rewind 10s"
                     >
-                      <Rewind className="h-5 w-5" />
+                      <Rewind className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                     <Button
                       size="icon"
                       variant="default"
-                      className="h-14 w-14 rounded-full shadow-lg hover:scale-105 transition-transform"
+                      className="mx-auto h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:scale-105 transition-transform"
                       onClick={togglePlayPause}
                     >
                       {playing ? (
-                        <IoPause className="h-6 w-6" />
+                        <IoPause className="h-5 w-5 sm:h-6 sm:w-6" />
                       ) : (
-                        <Play className="h-6 w-6 fill-current" />
+                        <Play className="h-5 w-5 sm:h-6 sm:w-6 fill-current" />
                       )}
                     </Button>
                     <Button
@@ -976,10 +924,10 @@ export default function Player({ id, mode = "page", onClose }) {
                         const max = Number(audio.duration) || Infinity;
                         audio.currentTime = Math.min(max, audio.currentTime + 10);
                       }}
-                      className="rounded-full hover:bg-secondary/80"
+                      className="mx-auto h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-secondary/80"
                       title="Fast Forward 10s"
                     >
-                      <FastForward className="h-5 w-5" />
+                      <FastForward className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                     <Button
                       size="icon"
@@ -1017,22 +965,13 @@ export default function Player({ id, mode = "page", onClose }) {
                           toast.error("No next song available");
                         }
                       }}
-                      className="rounded-full hover:bg-secondary/80 flex"
+                      className="mx-auto h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-secondary/80 flex"
                       title="Next Song"
                     >
-                      <SkipForward className="h-5 w-5" />
+                      <SkipForward className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
-                  <div className="flex items-center gap-3 sm:gap-4 w-full justify-center">
-                    <Button
-                      size="icon"
-                      variant="ghost"
-                      onClick={() => setShuffleEnabled((prev) => !prev)}
-                      className={shuffleEnabled ? "text-primary bg-secondary/50" : ""}
-                      title="Shuffle"
-                    >
-                      <Shuffle className="h-4 w-4" />
-                    </Button>
+                <div className="flex items-center gap-2 sm:gap-4 w-full justify-center">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -1043,17 +982,6 @@ export default function Player({ id, mode = "page", onClose }) {
                         <Repeat className="h-4 w-4" />
                       ) : (
                         <Repeat1 className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant={!isDownloading ? "ghost" : "secondary"}
-                      onClick={downloadSong}
-                    >
-                      {isDownloading ? (
-                        <span className="text-xs font-bold">{downloadProgress}%</span>
-                      ) : (
-                        <Download className="h-4 w-4" />
                       )}
                     </Button>
                     <Button size="icon" variant="ghost" onClick={handleShare}>
@@ -1110,6 +1038,7 @@ export default function Player({ id, mode = "page", onClose }) {
                   </div>
                 )}
               </div>
+              <QueueList className="mt-4" />
             </div>
           )}
         </div>

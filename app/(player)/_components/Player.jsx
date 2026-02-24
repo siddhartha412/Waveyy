@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { getSongsById } from "@/lib/fetch";
-import { Download, Play, Repeat, Repeat1, Share2 } from "lucide-react";
+import { Play, Repeat, Repeat1, Share2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
@@ -16,6 +16,7 @@ import {
 import Next from "@/components/cards/next";
 import { IoPause } from "react-icons/io5";
 import { decodeHTML } from "@/lib/decode-html";
+import { selectBestAudioUrl } from "@/lib/audio-quality";
 
 export default function Player({ id }) {
   const [data, setData] = useState([]);
@@ -23,21 +24,18 @@ export default function Player({ id }) {
   const audioRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [isDownloading, setIsDownloading] = useState(false);
   const [isLooping, setIsLooping] = useState(false);
   const [audioURL, setAudioURL] = useState("");
   const params = useSearchParams();
   const next = useNextMusicProvider();
-  const { current, setCurrent, setDownloadProgress, downloadProgress } =
+  const { current, setCurrent } =
     useMusicProvider();
 
   const getSong = async () => {
     const get = await getSongsById(id);
     const data = await get.json();
     setData(data.data[0]);
-    const urls = data?.data[0]?.downloadUrl || [];
-    // Prioritize 320kbps (usually last), then fallback downwards
-    const bestUrl = urls[urls.length - 1]?.url || urls[2]?.url || urls[0]?.url;
+    const bestUrl = selectBestAudioUrl(data?.data?.[0]?.downloadUrl || []);
     setAudioURL(bestUrl);
   };
 
@@ -56,57 +54,6 @@ export default function Player({ id }) {
       localStorage.setItem("p", "true");
     }
     setPlaying(!playing);
-  };
-
-  const downloadSong = async () => {
-    if (isDownloading) {
-      setDownloadProgress(0);
-      setIsDownloading(false);
-      return;
-    }
-    setIsDownloading(true);
-    setDownloadProgress(0);
-
-    const response = await fetch(audioURL);
-    if (!response.ok) throw new Error("Failed to fetch");
-
-    const contentLength = response.headers.get("Content-Length");
-    if (!contentLength) {
-      console.warn("No Content-Length header, can't show progress accurately.");
-    }
-
-    const total = contentLength ? parseInt(contentLength, 10) : 0;
-    let loaded = 0;
-
-    const reader = response.body.getReader();
-    const chunks = [];
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) {
-        chunks.push(value);
-        loaded += value.length;
-
-        if (total) {
-          const progress = Math.round((loaded / total) * 100);
-          setDownloadProgress(progress);
-        }
-      }
-    }
-
-    // Combine chunks into a blob
-    const blob = new Blob(chunks);
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${data.name}.mp3`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    toast.success("Downloaded!");
-    setIsDownloading(false);
-    setDownloadProgress(0);
   };
 
   const handleSeek = (e) => {
@@ -288,17 +235,6 @@ export default function Player({ id }) {
                         <Repeat className="h-4 w-4" />
                       ) : (
                         <Repeat1 className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      size="icon"
-                      variant={!isDownloading ? "ghost" : "secondary"}
-                      onClick={downloadSong}
-                    >
-                      {isDownloading ? (
-                        downloadProgress
-                      ) : (
-                        <Download className="h-4 w-4" />
                       )}
                     </Button>
                     <Button size="icon" variant="ghost" onClick={handleShare}>

@@ -107,9 +107,7 @@ export default function PlaylistDetailPage() {
     setMusic(firstSong.id);
     setPlayRequested(true);
     setPlaying(true);
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches) {
-      setPlayerOpen(true);
-    }
+    setPlayerOpen(false);
   };
 
   const handlePlayAll = () => playFromIndex(0);
