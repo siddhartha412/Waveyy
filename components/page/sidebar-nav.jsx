@@ -74,7 +74,7 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
 
   return (
     <aside
-      className={`waveyy-sidebar hidden lg:flex fixed left-0 top-0 z-[95] h-screen flex-col border-r border-border/60 bg-background/95 backdrop-blur-md transition-[width] duration-200 ${
+      className={`waveyy-sidebar hidden lg:flex fixed left-0 top-[84px] z-[95] h-[calc(100vh-84px)] flex-col border-r border-border/60 bg-background/95 backdrop-blur-md transition-[width] duration-200 ${
         open ? "w-[250px]" : "w-[66px]"
       }`}
     >

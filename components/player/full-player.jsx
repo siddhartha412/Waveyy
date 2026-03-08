@@ -154,6 +154,7 @@ export default function Player({ id, mode = "page", onClose }) {
         const songData = res.data[0];
         const nextAudioURL = selectBestAudioUrl(songData.downloadUrl);
         setData(songData);
+
         // Avoid forcing an audio reload when opening overlay/tv for the same track.
         setAudioURL((prev) => (prev === nextAudioURL ? prev : nextAudioURL));
         return songData;
@@ -364,12 +365,14 @@ export default function Player({ id, mode = "page", onClose }) {
 
       if (!suggestions || !suggestions.data || suggestions.data.length === 0) {
         const res = await getSongsSuggestions(songId);
-        suggestions = await res.json();
+        if (res.ok) {
+          suggestions = await res.json();
+        }
       }
 
       if (requestId !== recRequestRef.current || songId !== id) return;
 
-      if (suggestions && suggestions.data.length > 0) {
+      if (suggestions && suggestions.data && suggestions.data.length > 0) {
         // Filter out the current song and anything in the history
         const filtered = suggestions.data.filter(
           (s) => s.id !== songId && !currentHistory.includes(s.id)

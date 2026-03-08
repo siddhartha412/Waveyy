@@ -1,72 +1,38 @@
-# MusicHub
+# Waveyy
 
-MusicHub is a web music app built using Next.js 14, App Router, and an unofficial music API. The user interface is styled with Tailwind CSS.
-
-[![Follow me](https://img.shields.io/github/followers/r2hu1?style=social)](https://github.com/r2hu1)
-[![Star this Repo](https://img.shields.io/github/stars/r2hu1/musichub?style=social)](https://github.com/r2hu1/musichub)
-
-<br/>
-
-![Homepage](/public/feed.png)
+Waveyy is a premium web music app built using Next.js, App Router, and the JioSaavn API. The user interface is styled with Vanilla CSS and Tailwind for a modern, high-end experience.
 
 ## Features
 
-- Browse and listen to a wide variety of music.
-- Light and Dark mode for user preference.
-- Search for your favorite artists, albums, and tracks.
-- Enjoy a seamless music listening experience.
-
-## Screenshots
-
-### Homepage
-
-![Homepage](/public/feed.png)
-
-### Search Page
-
-![Search Page](/public/search-feed.png)
-
-### Album Page
-
-![Album Page](/public/album.png)
-
-### Music Page
-
-Player
-
-![Music Page](/public/player-1.png)
-
-Mobile Player
-
-![Music Page](/public/player-2.png)
+- **High-Fidelity Streaming**: Browse and listen to millions of tracks from JioSaavn.
+- **Modern UI**: Sleek, immersive design with smooth transitions and glassmorphism.
+- **Smart Search**: Direct, immediate search results that update as you type.
+- **Social Integration**: Connect your Discord and share what you're listening to.
+- **Personalized Experience**: Sync your play history and create custom playlists.
 
 ## Installation
 
-1. Clone the repository:
-
+1. Clone your repository:
 ```bash
-git clone https://github.com/r2hu1/musichub.git
-cd musichub
+git clone <your-repo-url>
+cd Waveyy
 ```
 
 2. Install dependencies:
-
 ```bash
-npm install or pnpm install
+npm install
 ```
 
-3. Run the development server:
+3. Configure your Environment Variables:
+Create a `.env` file based on `.env.example` with your Supabase and API credentials.
 
+4. Run the development server:
 ```bash
-npm run dev or pnpm run dev
+npm run dev
 ```
 
-Visit [http://localhost:3000](http://localhost:3000) in your browser to explore MusicHub.
-
-## Setup Api
-
-fork and deploy your own repo of `https://github.com/sumitkolhe/jiosaavn-api` get the deployment url and paste in .env file refer .env.example
+Visit [http://localhost:3000](http://localhost:3000) to start listening.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
+This project is licensed under the MIT License.

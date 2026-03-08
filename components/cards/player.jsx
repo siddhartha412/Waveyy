@@ -133,6 +133,15 @@ export default function Player() {
     finalizeClosePlayer();
   };
 
+  const formatTime = (time) => {
+    if (!time || isNaN(time) || time === Infinity || time < 0) return "00:00";
+    try {
+      return new Date(time * 1000).toISOString().substr(14, 5);
+    } catch {
+      return "00:00";
+    }
+  };
+
   const handleOpenTv = async () => {
     if (typeof document === "undefined") {
       setTvOpen(true);
@@ -154,8 +163,10 @@ export default function Player() {
   const getSong = async () => {
     if (!music) return;
     try {
+      let res;
       const get = await getSongsById(music);
-      const res = await get.json();
+      res = await get.json();
+      
       if (res.data?.[0]) {
         const song = res.data[0];
         setData(song);
@@ -183,12 +194,14 @@ export default function Player() {
 
       if (!suggestions || !suggestions.data || suggestions.data.length === 0) {
         const res = await getSongsSuggestions(songId);
-        suggestions = await res.json();
+        if (res.ok) {
+          suggestions = await res.json();
+        }
       }
 
       if (requestId !== recRequestRef.current || songId !== music) return;
 
-      if (suggestions && suggestions.data.length > 0) {
+      if (suggestions && suggestions.data && suggestions.data.length > 0) {
         const filtered = suggestions.data.filter(
           (s) => s.id !== songId && !history.includes(s.id)
         );
@@ -484,7 +497,7 @@ export default function Player() {
       {/* Desktop: dock a permanent right sidebar (Spotify-like) */}
       {isDesktop && !tvOpen && (
         <aside
-          className={`hidden lg:block fixed right-0 top-0 h-screen w-[360px] border-l border-border bg-background z-[90] transition-transform duration-300 ${
+          className={`hidden lg:block fixed right-0 top-[72px] h-[calc(100vh-72px)] w-[360px] border-l border-border bg-background z-[90] transition-transform duration-300 ${
             isClosing ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
           }`}
         >
@@ -493,13 +506,13 @@ export default function Player() {
       )}
 
       {(!playerOpen || isDesktop) && !tvOpen && (
-      <div className={`fixed left-0 right-0 lg:right-[360px] z-[100] bg-background/95 backdrop-blur-md border-t border-border shadow-2xl h-[72px] sm:h-24 flex flex-col ${
-        !isDesktop && !isAuthPage ? "bottom-14" : "bottom-0"
+      <div className={`fixed left-0 right-0 z-[100] bg-background/80 backdrop-blur-xl border-t border-border/50 shadow-2xl transition-all duration-300 ${
+        !isDesktop ? "h-[76px] bottom-14 px-2" : "lg:right-[360px] h-24 bottom-0"
       }`}>
-        <div className="absolute top-0 left-0 right-0 -translate-y-[2px] px-0">
+        <div className="absolute top-0 left-2 right-2 -translate-y-[1px]">
           <Slider
-            thumbClassName="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity"
-            trackClassName="h-[3px] group-hover:h-1.5 transition-all"
+            thumbClassName="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity bg-primary"
+            trackClassName="h-[2px] group-hover:h-1 transition-all"
             onValueChange={handleSeek}
             value={[currentTime]}
             max={duration || 100}
@@ -511,22 +524,22 @@ export default function Player() {
           <div className="flex items-center gap-3 min-w-0 flex-1 sm:w-1/4 sm:min-w-[150px]">
             {data ? (
               <>
-                <div className="relative group">
+                <div className="relative group shrink-0">
                   <img
                     src={data.image?.[1]?.url}
-                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-md object-cover shadow-lg group-hover:opacity-80 transition cursor-pointer"
+                    className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg object-cover shadow-md group-hover:opacity-80 transition cursor-pointer"
                     onClick={() => setPlayerOpen(true)}
                   />
                 </div>
-                <div className="overflow-hidden">
+                <div className="overflow-hidden flex-1">
                   <button
                     type="button"
                     onClick={() => setPlayerOpen(true)}
-                    className="text-left text-sm font-semibold truncate block hover:text-primary transition"
+                    className="text-left text-[13px] sm:text-sm font-bold truncate block hover:text-primary transition leading-snug"
                   >
                     {safeTitle}
                   </button>
-                  <p className="text-xs text-muted-foreground truncate">
+                  <p className="text-[11px] sm:text-xs text-muted-foreground truncate font-medium">
                     {safeArtist}
                   </p>
                 </div>
@@ -554,12 +567,12 @@ export default function Player() {
           <div className="flex items-center justify-center gap-2 sm:flex-1 sm:flex-col sm:gap-1">
             <div className="flex items-center gap-2 sm:hidden">
               <Button
-                variant="secondary"
+                variant="ghost"
                 size="icon"
                 onClick={togglePlayPause}
-                className="h-10 w-10 rounded-full shadow-md bg-foreground text-background"
+                className="h-11 w-11 rounded-full text-foreground hover:bg-transparent"
               >
-                {playing ? <IoPause className="h-4 w-4" /> : <Play className="h-4 w-4 fill-current" />}
+                {playing ? <IoPause className="h-6 w-6" /> : <Play className="h-6 w-6 fill-current" />}
               </Button>
               <Button
                 size="icon"
@@ -613,9 +626,9 @@ export default function Player() {
               </Button>
             </div>
             <div className="hidden md:flex text-[10px] text-muted-foreground font-medium gap-2">
-              <span>{new Date(currentTime * 1000).toISOString().substr(14, 5)}</span>
+              <span>{formatTime(currentTime)}</span>
               <span>/</span>
-              <span>{new Date(duration * 1000).toISOString().substr(14, 5)}</span>
+              <span>{formatTime(duration)}</span>
             </div>
           </div>
 

@@ -4,7 +4,7 @@ import ArtistCard from "@/components/cards/artist";
 import SongCard from "@/components/cards/song";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getSongsByQuery, searchAlbumByQuery } from "@/lib/fetch";
+import { getSongsByQuery, searchAlbumByQuery, searchYouTubeMusicQuery } from "@/lib/fetch";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -140,6 +140,7 @@ export default function Search({ params }) {
         );
         setAlbums(uniqueAlbums);
     };
+
     useEffect(() => {
         getSongs();
         getAlbum();
@@ -161,15 +162,14 @@ export default function Search({ params }) {
     return (
         <div className="py-12 px-6 md:px-20 lg:px-32">
             <div className="grid gap-4">
-                <div className="mt-2">
-                    <h1 className="text-base">Search Results</h1>
-                    <p className="text-xs text-muted-foreground">search results for "{query}"</p>
+                <div className="mt-6">
+                    <h1 className="text-xl font-bold tracking-tight">Songs</h1>
                 </div>
 
                 {shouldShowTopArtist && (
                     <>
-                        <div className="mt-3">
-                            <h1 className="text-base font-medium">Top Result</h1>
+                        <div className="mt-8">
+                            <h1 className="text-xl font-bold tracking-tight">Top Result</h1>
                         </div>
                         <Link
                             href={`/artist/${topArtist.artist.id}`}
@@ -205,9 +205,9 @@ export default function Search({ params }) {
                     <ScrollBar orientation="horizontal" className="hidden sm:flex" />
                 </ScrollArea>
 
+
                 <div className="mt-8">
-                    <h1 className="text-base">Related Albums</h1>
-                    <p className="text-xs text-muted-foreground">Albums related to "{query}"</p>
+                    <h1 className="text-xl font-bold tracking-tight">Albums</h1>
                 </div>
                 <ScrollArea className="whitespace-nowrap pb-4">
                     <div className="flex gap-4">
@@ -226,9 +226,8 @@ export default function Search({ params }) {
                     <ScrollBar orientation="horizontal" className="hidden sm:flex" />
                 </ScrollArea>
 
-                <div className="mt-4">
-                    <h1 className="text-base font-medium">Related Artists</h1>
-                    <p className="text-xs text-muted-foreground">artists related to "{query}"</p>
+                <div className="mt-8">
+                    <h1 className="text-xl font-bold tracking-tight">Artists</h1>
                 </div>
                 <ScrollArea>
                     {artists.length > 0 ? (

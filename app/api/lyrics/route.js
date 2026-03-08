@@ -9,12 +9,12 @@ export async function GET(req) {
   const artist = searchParams.get("artist") || "";
   const album = searchParams.get("album") || "";
   const duration = searchParams.get("duration") || "";
-  const cacheKey = `lyrics:${track}:${artist}:${album}:${duration}`.toLowerCase();
 
   if (!track || !artist) {
     return NextResponse.json({ error: "Missing track or artist" }, { status: 400 });
   }
 
+  const cacheKey = `lyrics:${track}:${artist}:${album}:${duration}`.toLowerCase();
   const cached = await getCachedJson(cacheKey);
   if (cached) {
     return NextResponse.json(cached, { status: 200 });

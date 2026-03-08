@@ -150,7 +150,7 @@ export async function GET(req) {
         const res = await fetch(url, {
           cache: "no-store",
           headers: {
-            "User-Agent": "MusicHub/1.0",
+            "User-Agent": "Waveyy/1.0",
           },
         });
         if (!res.ok) {
