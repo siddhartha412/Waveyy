@@ -15,6 +15,7 @@ import {
 import { topChartsPublic } from "@/lib/jiosaavn-public";
 import ArtistCard from "@/components/cards/artist";
 import AlbumCard from "@/components/cards/album";
+import VibeSelector from "@/components/page/vibe-selector";
 
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 
@@ -602,10 +603,22 @@ export default function Page() {
       />
       
       {user && (
+        <section className="relative z-10 mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+              {user.email?.[0]?.toUpperCase() || "S"}
+            </div>
+            <h1 className="text-xl font-semibold">What's your vibe, {user.email?.split("@")[0] || "Friend"}?</h1>
+          </div>
+          <VibeSelector onVibeSelect={(vibe) => console.log("Selected vibe:", vibe)} />
+        </section>
+      )}
+      
+      {user && (
         <section className="relative z-10">
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Made for You</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">What you want to listen to?</h1>
               <p className="text-sm text-muted-foreground">
                 {recommendedGenres.length
                   ? `Based on your last 5 days: ${recommendedGenres.join(", ")}`
