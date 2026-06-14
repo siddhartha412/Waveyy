@@ -578,7 +578,7 @@ export default function Page() {
           id="trending-cards"
         >
           <ScrollArea>
-            <div className="flex gap-4">
+            <div className="flex gap-4 pb-4">
               {trendLoading
                 ? Array.from({ length: 6 }).map((_, i) => (
                     <SongCard key={`trend-skel-${i}`} />
