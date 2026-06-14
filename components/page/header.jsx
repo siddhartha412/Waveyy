@@ -14,7 +14,6 @@ export default function Header({ sidebarOpen = true }) {
   const path = usePathname();
   const { playerOpen, music } = useMusicProvider();
   const isDesktop = useMediaQuery("(min-width: 1024px)");
-  const isSmUp = useMediaQuery("(min-width: 640px)");
   const isAuthPage = path === "/login" || path === "/signup";
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
@@ -22,12 +21,7 @@ export default function Header({ sidebarOpen = true }) {
 
   return (
     <header
-      className={`sticky top-0 relative z-[120] border-b border-white/[0.06] bg-background/80 backdrop-blur-[40px] saturate-[180%] px-4 py-3 sm:px-5 lg:h-[64px] lg:py-0 lg:flex lg:items-center rounded-b-2xl mx-4`}
-      style={{
-        backgroundImage: isSmUp
-          ? "linear-gradient(90deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.62) 50%, rgba(0,0,0,0.78) 100%), linear-gradient(90deg, rgba(18,18,22,0.52) 0%, var(--waveyy-nav-tint, rgb(24,24,28)) 50%, rgba(18,18,22,0.52) 100%)"
-          : "none",
-      }}
+      className={`sticky top-0 relative z-[120] border-b border-border/60 bg-secondary/20 backdrop-blur-[40px] saturate-[180%] px-4 py-3 sm:px-5 lg:h-[64px] lg:py-0 lg:flex lg:items-center rounded-b-2xl mx-4`}
     >
       <div className="flex w-full items-center gap-3 sm:grid sm:grid-cols-[auto_minmax(320px,620px)_auto] sm:items-center lg:flex lg:items-center lg:h-full">
         <div className="shrink-0 sm:justify-self-start">

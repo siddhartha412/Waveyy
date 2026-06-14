@@ -505,7 +505,7 @@ export default function Player({ rightSidebarOpen = true, onToggleRightSidebar =
         </aside>
       )}
 
-      {(!playerOpen || isDesktop) && !tvOpen && (
+      {!isDesktop && !playerOpen && !tvOpen && (
       <div className={`fixed z-[100] bg-background/80 backdrop-blur-[40px] saturate-[180%] border border-border/60 surface-shadow-lg rounded-2xl transition-all duration-300 ease-smooth ${
         !isDesktop ? "left-0 right-0 h-[76px] bottom-[68px] px-2 mx-2" : `left-[282px] h-[96px] bottom-2 mx-2 ${rightSidebarOpen ? "right-[368px]" : "right-[100px]"}`
       }`}>

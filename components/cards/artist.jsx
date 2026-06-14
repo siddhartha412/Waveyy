@@ -6,7 +6,7 @@ export default function ArtistCard({ image, name, id }) {
     const safeName = decodeHTML(name || "");
     return (
         <Link href={`/artist/${id}`} className="group block w-fit">
-            <div className="overflow-hidden h-[160px] w-[160px] sm:h-[180px] sm:w-[180px] rounded-full lg:surface-shadow-sm relative bg-secondary/30 border border-border/60">
+            <div className="glow-card overflow-hidden h-[160px] w-[160px] sm:h-[180px] sm:w-[180px] rounded-full lg:surface-shadow-sm relative bg-secondary/30 border border-border/60">
                 {image ? (
                     <AdaptiveImage
                         src={image}

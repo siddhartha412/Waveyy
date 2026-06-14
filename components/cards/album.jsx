@@ -10,7 +10,7 @@ export default function AlbumCard({ title, image, artist, id, desc, lang }) {
     const safeDesc = decodeHTML(desc || "");
     return (
         <div className="h-fit w-[200px]">
-            <div className="overflow-hidden rounded-lg border border-border/60 lg:surface-shadow-sm glass-shine">
+            <div className="glow-card overflow-hidden rounded-lg border border-border/60 lg:surface-shadow-sm glass-shine">
                 {image ? (
                     <Link href={`/${id}`}>
                         <AdaptiveImage

@@ -38,7 +38,7 @@ export default function UserPanel({ open = true }) {
 
   if (loading) {
     return (
-      <div className={`mt-auto ${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
+      <div className={`${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
         <div className={`${open ? "flex items-center gap-2.5" : "flex justify-center"}`}>
           <div className="h-8 w-8 shrink-0 rounded-full bg-secondary animate-pulse" />
           {open && (
@@ -54,9 +54,9 @@ export default function UserPanel({ open = true }) {
 
   if (!user) {
     return (
-      <div className={`mt-auto ${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
+      <div className={`${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
         {open ? (
-          <div className="rounded-xl bg-secondary/50 p-2.5 w-full">
+          <div className="glow-card rounded-xl bg-secondary/50 p-2.5 w-full">
             <div className="flex items-center gap-2.5">
               <div className="h-8 w-8 shrink-0 rounded-full bg-secondary/80 flex items-center justify-center surface-shadow-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -97,9 +97,9 @@ export default function UserPanel({ open = true }) {
   const initials = getAvatarFallback(user);
 
   return (
-    <div className={`mt-auto ${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
+    <div className={`${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
       {open ? (
-        <div className="rounded-xl bg-secondary/50 p-2.5 w-full">
+        <div className="glow-card rounded-xl bg-secondary/50 p-2.5 w-full">
           <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 shrink-0 rounded-full overflow-hidden bg-secondary flex items-center justify-center surface-shadow-sm">
               {avatarUrl ? (

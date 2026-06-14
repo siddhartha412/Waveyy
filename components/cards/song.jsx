@@ -202,7 +202,7 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
 
     return (
         <div className="h-fit w-[200px]" onContextMenu={openContextMenu}>
-            <div className="overflow-hidden rounded-lg border border-border/60 lg:surface-shadow-sm glass-shine">
+            <div className="glow-card overflow-hidden rounded-lg border border-border/60 lg:surface-shadow-sm glass-shine">
                 {image ? (
                     <div className="relative group" onClick={playSong}>
                         <AdaptiveImage
