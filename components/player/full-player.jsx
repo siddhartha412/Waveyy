@@ -785,7 +785,7 @@ export default function Player({ id, mode = "page", onClose }) {
   return (
     <div className={isOverlay ? "mb-3 mt-2 pt-6 sm:pt-6" : "mb-3 mt-6 sm:mt-10"}>
       <div className="grid gap-6 w-full overflow-x-hidden">
-        <div className="grid w-full max-w-4xl mx-auto gap-5 px-4 sm:px-6 md:px-10 lg:px-16 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-start sm:gap-6">
+        <div className="grid w-full gap-5 px-4 sm:px-6 md:px-10 lg:px-16 sm:grid-cols-[200px_minmax(0,1fr)] sm:items-start sm:gap-6">
           <div className="mx-auto w-full max-w-[320px] sm:mx-0 sm:max-w-none sm:w-[200px]">
             {!data.name ? (
               <Skeleton className="w-full aspect-square rounded-2xl" />

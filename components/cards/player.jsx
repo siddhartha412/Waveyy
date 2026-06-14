@@ -497,7 +497,7 @@ export default function Player() {
       {/* Desktop: dock a permanent right sidebar (Spotify-like) */}
       {isDesktop && !tvOpen && (
         <aside
-          className={`hidden lg:block fixed right-0 top-[72px] h-[calc(100vh-72px)] w-[360px] border-l border-border bg-background z-[90] transition-transform duration-300 ${
+          className={`hidden lg:block fixed right-0 top-[84px] h-[calc(100vh-100px)] w-[360px] border border-border/60 bg-secondary/20 backdrop-blur-[40px] z-[90] rounded-2xl m-2 transition-all duration-300 ease-smooth ${
             isClosing ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
           }`}
         >
@@ -506,8 +506,8 @@ export default function Player() {
       )}
 
       {(!playerOpen || isDesktop) && !tvOpen && (
-      <div className={`fixed left-0 right-0 z-[100] bg-background/80 backdrop-blur-xl border-t border-border/50 shadow-2xl transition-all duration-300 ${
-        !isDesktop ? "h-[76px] bottom-14 px-2" : "lg:right-[360px] h-24 bottom-0"
+      <div className={`fixed z-[100] bg-background/80 backdrop-blur-[40px] saturate-[180%] border border-border/60 surface-shadow-lg rounded-2xl transition-all duration-300 ease-smooth ${
+        !isDesktop ? "left-0 right-0 h-[76px] bottom-[68px] px-2 mx-2" : "left-[282px] right-[368px] h-[96px] bottom-2 mx-2"
       }`}>
         <div className="absolute top-0 left-2 right-2 -translate-y-[1px]">
           <Slider
@@ -633,7 +633,7 @@ export default function Player() {
           </div>
 
           {/* Right Section: Actions */}
-          <div className="hidden sm:flex items-center justify-end gap-2 w-1/4 min-w-[100px]">
+          <div className="hidden sm:flex items-center justify-end gap-2 w-1/4 min-w-[130px] shrink-0">
             <Button
               size="icon"
               variant="ghost"

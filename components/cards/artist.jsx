@@ -6,12 +6,12 @@ export default function ArtistCard({ image, name, id }) {
     const safeName = decodeHTML(name || "");
     return (
         <Link href={`/artist/${id}`} className="group block w-fit">
-            <div className="overflow-hidden h-[160px] w-[160px] sm:h-[180px] sm:w-[180px] rounded-full shadow-lg relative bg-secondary/30">
+            <div className="overflow-hidden h-[160px] w-[160px] sm:h-[180px] sm:w-[180px] rounded-full lg:surface-shadow-sm relative bg-secondary/30 border border-border/60">
                 {image ? (
                     <AdaptiveImage
                         src={image}
                         alt={safeName}
-                        className="group-hover:scale-105 transition cursor-pointer rounded-full h-full w-full object-cover"
+                        className="group-hover:scale-[1.03] transition-all duration-300 ease-smooth cursor-pointer rounded-full h-full w-full object-cover"
                     />
                 ) : (
                     <div className="h-full w-full rounded-full animate-pulse bg-secondary" />
