@@ -19,8 +19,12 @@ export default function RootLayout({ children }) {
     const handledAuthErrorRef = useRef(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    const sidebarPadding = sidebarOpen ? "lg:pl-[282px]" : "lg:pl-[98px]";
-    const rightPlayerPadding = music && isDesktop ? "lg:pr-[360px]" : "";
+    const sidebarPadding = sidebarOpen
+        ? "lg:pl-[282px]"
+        : "lg:pl-[100px]";
+    const rightPlayerPadding = music && isDesktop
+        ? "lg:pr-[392px]"
+        : "";
 
     useEffect(() => {
         if (handledAuthErrorRef.current) return;

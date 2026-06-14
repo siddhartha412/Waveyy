@@ -54,19 +54,7 @@ export default function AuthActions({ onMenuOpenChange = () => {} }) {
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" className="h-9 px-2 sm:px-3 text-xs sm:text-sm" asChild>
-          <Link href="/login">Login</Link>
-        </Button>
-        <Button
-          className="hidden sm:inline-flex h-9 px-3 bg-foreground text-background hover:bg-foreground/90"
-          asChild
-        >
-          <Link href="/signup">Sign Up</Link>
-        </Button>
-      </div>
-    );
+    return null;
   }
 
   return (

@@ -2,11 +2,19 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, Heart, Home, Library, Plus } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Heart,
+  Home,
+  Library,
+  Plus,
+} from "lucide-react";
 import { useMusicProvider } from "@/hooks/use-context";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
+import UserPanel from "./user-panel";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -30,7 +38,9 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
     });
   };
 
-  const visibleNavItems = user ? navItems : navItems.filter((item) => item.href === "/");
+  const visibleNavItems = user
+    ? navItems
+    : navItems.filter((item) => item.href === "/");
   const getPlaylistImages = (playlist) => {
     if (!Array.isArray(playlist?.songs)) return [];
     return playlist.songs
@@ -54,7 +64,13 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
     }
 
     if (images.length === 1) {
-      return <img src={images[0]} alt={playlist.name} className="h-full w-full object-cover" />;
+      return (
+        <img
+          src={images[0]}
+          alt={playlist.name}
+          className="h-full w-full object-cover"
+        />
+      );
     }
 
     const tile = (index) => images[index] || images[images.length - 1];
@@ -74,25 +90,33 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
 
   return (
     <aside
-      className={`waveyy-sidebar hidden lg:flex fixed left-0 top-[84px] z-[95] h-[calc(100vh-84px)] flex-col border-r border-border/60 bg-background/95 backdrop-blur-md transition-[width] duration-200 ${
+      className={`waveyy-sidebar hidden lg:flex fixed left-0 top-[84px] z-[95] h-[calc(100vh-100px)] rounded-2xl m-2 flex-col border border-border/60 bg-secondary/20 backdrop-blur-[40px] saturate-[180%] transition-[width] duration-300 ease-smooth ${
         open ? "w-[250px]" : "w-[66px]"
       }`}
     >
-      <div className={`py-6 ${open ? "px-5" : "px-2"}`}>
-        <div className={`flex items-center ${open ? "justify-between" : "justify-center"}`}>
-          {open ? <h2 className="text-lg font-semibold">Library</h2> : null}
+      <div className={`py-5 ${open ? "px-4" : "px-2"}`}>
+        <div
+          className={`flex items-center ${open ? "justify-between" : "justify-center"}`}
+        >
+          {open ? (
+            <h2 className="text-base font-semibold tracking-tight">Library</h2>
+          ) : null}
           <Button
             size="icon"
             variant="ghost"
-            className="h-8 w-8"
+            className="h-7 w-7 rounded-lg hover:bg-secondary/70"
             onClick={onToggle}
             title={open ? "Collapse sidebar" : "Expand sidebar"}
           >
-            {open ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            {open ? (
+              <ChevronLeft className="h-4 w-4" />
+            ) : (
+              <ChevronRight className="h-4 w-4" />
+            )}
           </Button>
         </div>
       </div>
-      <div className={open ? "px-3" : "px-2"}>
+      <div className={open ? "px-2.5" : "px-1.5"}>
         {visibleNavItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -102,40 +126,50 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`mb-1 flex items-center rounded-lg px-3 py-2 text-sm transition-colors ${
-                open ? "gap-3 justify-start" : "justify-center"
+              className={`mb-0.5 flex items-center rounded-lg px-2.5 py-1.5 text-sm transition-all duration-200 ease-smooth ${
+                open ? "gap-2.5 justify-start" : "justify-center"
               } ${
                 active
-                  ? "bg-secondary text-foreground"
-                  : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                  ? "bg-secondary/80 text-foreground"
+                  : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
               }`}
               title={item.label}
             >
-              <Icon className="h-4 w-4" />
-              {open ? item.label : null}
+              <Icon className="h-4 w-4 shrink-0" />
+              {open ? <span className="truncate">{item.label}</span> : null}
             </Link>
           );
         })}
       </div>
       {user ? (
         <>
-          <div className={`mt-4 flex items-center ${open ? "justify-between px-5" : "justify-center px-2"}`}>
+          <div
+            className={`mt-3 flex items-center ${open ? "justify-between px-4" : "justify-center px-2"}`}
+          >
             {open ? (
-              <p className="text-xs uppercase tracking-wide text-muted-foreground">Your Playlists</p>
+              <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                Your Playlists
+              </p>
             ) : null}
             <Button
               size="icon"
               variant="ghost"
-              className="h-7 w-7"
+              className="h-6 w-6 rounded-md hover:bg-secondary/70"
               onClick={handleCreate}
               title="Create playlist"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <div className={`mt-2 flex-1 overflow-y-auto pb-5 ${open ? "px-3" : "px-2"}`}>
+          <div
+            className={`mt-1.5 flex-1 overflow-y-auto pb-2 ${open ? "px-2.5" : "px-1.5"}`}
+          >
             {playlists.length === 0 ? (
-              open ? <p className="px-2 py-2 text-xs text-muted-foreground">No playlists yet</p> : null
+              open ? (
+                <p className="px-2 py-1.5 text-xs text-muted-foreground">
+                  No playlists yet
+                </p>
+              ) : null
             ) : (
               playlists.map((playlist) => {
                 const href = `/playlists/${playlist.id}`;
@@ -144,29 +178,33 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
                   <Link
                     key={playlist.id}
                     href={href}
-                    className={`mb-1 block rounded-md px-3 py-2 text-sm transition-colors ${
+                    className={`mb-0.5 block rounded-lg px-2.5 py-1.5 text-sm transition-all duration-200 ease-smooth ${
                       active
-                        ? "bg-secondary text-foreground"
-                        : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
+                        ? "bg-secondary/80 text-foreground"
+                        : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                     }`}
                     title={playlist.name}
                   >
                     {open ? (
-                      <>
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="h-9 w-9 shrink-0 overflow-hidden rounded-sm bg-secondary/70 flex items-center justify-center">
-                            {renderPlaylistThumb(playlist)}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="h-8 w-8 shrink-0 overflow-hidden rounded-md bg-secondary/70 flex items-center justify-center">
+                          {renderPlaylistThumb(playlist)}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="truncate text-[13px]">
+                            {playlist.name}
                           </div>
-                          <div className="min-w-0">
-                            <div className="truncate">{playlist.name}</div>
-                            <div className="text-xs text-muted-foreground">{playlist.songs.length} songs</div>
+                          <div className="text-[11px] text-muted-foreground">
+                            {playlist.songs.length} songs
                           </div>
                         </div>
-                      </>
+                      </div>
                     ) : (
                       <div
                         className={`mx-auto h-2 w-2 rounded-full ${
-                          isLikedPlaylist?.(playlist.id) ? "bg-red-500" : "bg-muted-foreground/50"
+                          isLikedPlaylist?.(playlist.id)
+                            ? "bg-red-500"
+                            : "bg-muted-foreground/50"
                         }`}
                       />
                     )}
@@ -177,10 +215,9 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
           </div>
         </>
       ) : (
-        <div className="mt-auto px-4 pb-5 text-xs text-muted-foreground">
-          {open ? "Login to use playlists" : null}
-        </div>
+        <div className="flex-1" />
       )}
+      <UserPanel open={open} />
     </aside>
   );
 }

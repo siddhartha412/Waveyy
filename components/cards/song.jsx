@@ -200,27 +200,28 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
 
     return (
         <div className="h-fit w-[200px]" onContextMenu={openContextMenu}>
-            <div className="overflow-hidden rounded-md">
+            <div className="overflow-hidden rounded-lg border border-border/60 lg:surface-shadow-sm glass-shine">
                 {image ? (
                     <div className="relative group" onClick={playSong}>
                         <AdaptiveImage
                             src={image}
                             alt={safeTitle}
-                            className="h-[182px] blurz w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-pointer"
+                            className="blurz w-full bg-secondary/60 rounded-lg transition-all duration-300 ease-smooth hover:scale-[1.03] hover:surface-shadow-md cursor-pointer"
+                            style={{ height: "182px" }}
                         />
-                        <div className="absolute inset-0 rounded-md bg-black/20 opacity-0 transition-opacity group-hover:opacity-100" />
-                        <div className="pointer-events-none absolute z-10 bottom-2 left-2 bg-background/70 backdrop-blur-md rounded-full h-8 w-8 flex items-center justify-center opacity-0 scale-90 transition-all duration-150 group-hover:opacity-100 group-hover:scale-100">
+                        <div className="absolute inset-0 rounded-lg bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
+                        <div className="pointer-events-none absolute z-10 bottom-2 left-2 bg-background/70 backdrop-blur-[40px] rounded-full h-8 w-8 flex items-center justify-center opacity-0 scale-90 transition-all duration-200 ease-spring group-hover:opacity-100 group-hover:scale-100">
                             <IoPlay className="w-4 h-4 -mr-0.5 dark:fill-white" />
                         </div>
                         {isPopular && (
-                            <div className="absolute top-2 right-2 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                            <div className="absolute top-2 right-2 bg-orange-500/90 text-white text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 surface-shadow-md backdrop-blur-sm">
                                 <FaFire className="w-3 h-3" />
                                 <span>HOT</span>
                             </div>
                         )}
                     </div>
                 ) : (
-                    <Skeleton className="w-full h-[182px]" />
+                    <Skeleton className="w-full" style={{ height: "182px" }} />
                 )}
             </div>
             <div className="cursor-pointer">

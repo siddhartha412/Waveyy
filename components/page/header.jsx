@@ -22,14 +22,14 @@ export default function Header({ sidebarOpen = true }) {
 
   return (
     <header
-      className={`sticky top-0 relative z-[120] border-b border-white/10 bg-black/95 backdrop-blur-xl shadow-[0_1px_0_0_rgba(255,255,255,0.04)] px-4 py-3 sm:px-5`}
+      className={`sticky top-0 relative z-[120] border-b border-white/[0.06] bg-background/80 backdrop-blur-[40px] saturate-[180%] px-4 py-3 sm:px-5 lg:h-[64px] lg:py-0 lg:flex lg:items-center rounded-b-2xl mx-4`}
       style={{
         backgroundImage: isSmUp
           ? "linear-gradient(90deg, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.62) 50%, rgba(0,0,0,0.78) 100%), linear-gradient(90deg, rgba(18,18,22,0.52) 0%, var(--waveyy-nav-tint, rgb(24,24,28)) 50%, rgba(18,18,22,0.52) 100%)"
           : "none",
       }}
     >
-      <div className="flex w-full items-center gap-3 sm:grid sm:grid-cols-[auto_minmax(320px,620px)_auto] sm:items-center">
+      <div className="flex w-full items-center gap-3 sm:grid sm:grid-cols-[auto_minmax(320px,620px)_auto] sm:items-center lg:flex lg:items-center lg:h-full">
         <div className="shrink-0 sm:justify-self-start">
           <Logo />
         </div>
@@ -39,14 +39,14 @@ export default function Header({ sidebarOpen = true }) {
             <div className="mx-auto flex w-full max-w-[640px] items-center gap-2">
               <Link
                 href="/"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#2a2a2a] hover:bg-[#333333] transition-colors"
+                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#2a2a2a] hover:bg-[#333333] transition-all duration-200 ease-smooth"
                 title="Home"
               >
                 <Home className="h-5 w-5" />
               </Link>
-              <div className="relative min-w-0 flex-1 rounded-full border border-border/60 bg-secondary/35 px-1">
+              <div className="relative min-w-0 flex-1 rounded-full border border-white/[0.06] bg-secondary/30 px-1">
                 <Search />
-                <div className="pointer-events-none absolute right-11 top-1/2 h-5 w-px -translate-y-1/2 bg-border/70" />
+                <div className="pointer-events-none absolute right-10 top-1/2 h-4 w-px -translate-y-1/2 bg-white/[0.08]" />
               </div>
             </div>
           </div>

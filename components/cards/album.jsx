@@ -10,17 +10,18 @@ export default function AlbumCard({ title, image, artist, id, desc, lang }) {
     const safeDesc = decodeHTML(desc || "");
     return (
         <div className="h-fit w-[200px]">
-            <div className="overflow-hidden rounded-md">
+            <div className="overflow-hidden rounded-lg border border-border/60 lg:surface-shadow-sm glass-shine">
                 {image ? (
                     <Link href={`/${id}`}>
                         <AdaptiveImage
                             src={image}
                             alt={safeTitle}
-                            className="h-[182px] w-full bg-secondary/60 rounded-md transition hover:scale-105 cursor-pointer"
+                            className="w-full bg-secondary/60 rounded-lg transition-all duration-300 ease-smooth hover:scale-[1.03] hover:surface-shadow-md cursor-pointer"
+                            style={{ height: "182px" }}
                         />
                     </Link>
                 ) : (
-                    <Skeleton className="w-full h-[182px]" />
+                    <Skeleton className="w-full" style={{ height: "182px" }} />
                 )}
             </div>
             <div className="cursor-pointer">

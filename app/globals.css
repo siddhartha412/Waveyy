@@ -75,7 +75,6 @@
     display: none !important;
   }
 
-  /* Force-hide mobile bottom nav whenever any dialog is open (mobile full player overlay). */
   main:has([role="dialog"][data-state="open"]) .waveyy-mobile-bottom-nav {
     display: none !important;
   }
@@ -93,27 +92,56 @@
   }
 
   @keyframes blur {
-    0% {
-      filter: blur(5px);
-    }
-
-    100% {
-      filter: blur(0);
-    }
+    0% { filter: blur(5px); }
+    100% { filter: blur(0); }
   }
 
-
   @keyframes wave-move {
-    from {
-      mask-position: 0 0;
-    }
-
-    to {
-      mask-position: var(--wave-width) 0;
-    }
+    from { mask-position: 0 0; }
+    to { mask-position: var(--wave-width) 0; }
   }
 
   .wavy-range-static::after {
     animation-play-state: paused;
+  }
+}
+
+@layer components {
+  .surface-shadow-sm {
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.04);
+  }
+  .surface-shadow-md {
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.03), 0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .surface-shadow-lg {
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.08);
+  }
+  .glass {
+    background: hsl(var(--background) / 0.8);
+    backdrop-filter: blur(40px) saturate(180%);
+  }
+  .glass-shine {
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-shine::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      rgba(255, 255, 255, 0.03) 45%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.03) 55%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.5s ease;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .glass-shine:hover::before {
+    transform: translateX(100%);
   }
 }
