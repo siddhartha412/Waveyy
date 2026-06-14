@@ -471,92 +471,95 @@ export default function Page() {
   const mainLayoutClass = user
     ? "min-h-screen pt-4 pb-10 px-0"
     : "min-h-screen pt-0 pb-10 px-0";
-  const trendingSectionClass = user
-    ? "relative z-10 isolate mt-8 px-6 py-5 md:px-20 lg:px-32 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm ml-2 mr-4"
-    : "relative z-10 isolate mt-[30px] pt-5 pb-3 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm ml-2 mr-4";
-  const trendingInnerClass = user
-    ? "relative z-10 px-5 md:px-7 lg:px-8"
-    : "relative z-10 px-5 md:px-7 lg:px-8";
+  const trendingSectionClass =
+    "relative z-10 isolate mt-[30px] pt-5 pb-3 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm ml-2 mr-4";
+  const trendingInnerClass = "relative z-10 px-5 md:px-7 lg:px-8";
 
 
   return (
     <main className={`${mainLayoutClass} relative`}>
 
       {user && (
-        <section className="relative z-10 rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm p-5 ml-2 mr-4">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                Made for You
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {recommendedGenres.length
-                  ? `Based on your last 5 days: ${recommendedGenres.join(", ")}`
-                  : "Personalized picks from your last 5 days of listening."}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <ScrollArea>
-              <div className="flex gap-4">
-                {recLoading
-                  ? Array.from({ length: 6 }).map((_, i) => (
-                      <SongCard key={`rec-skel-${i}`} />
-                    ))
-                  : recommended.length > 0
-                    ? recommended.map((song) => (
-                        <SongCard
-                          key={song.id}
-                          id={song.id}
-                          image={toImage(song)}
-                          artist={toArtistLabel(song)}
-                          title={song.name}
-                          playCount={song.playCount}
-                        />
-                      ))
-                    : Array.from({ length: 6 }).map((_, i) => (
-                        <SongCard key={`rec-empty-${i}`} />
-                      ))}
+        <section className={trendingSectionClass}>
+          <div className={trendingInnerClass}>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <h1 className="text-3xl sm:text-4xl font-semibold leading-[1.08] tracking-tight text-white">
+                  Made for You
+                </h1>
+                <p className="mt-1 text-sm sm:text-base text-white/75">
+                  {recommendedGenres.length
+                    ? `Based on your last 5 days: ${recommendedGenres.join(", ")}`
+                    : "Personalized picks from your last 5 days of listening."}
+                </p>
               </div>
-              <ScrollBar orientation="horizontal" className="hidden sm:flex" />
-            </ScrollArea>
+            </div>
+
+            <div className="mt-6">
+              <ScrollArea>
+                <div className="flex gap-4 pb-4">
+                  {recLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                        <SongCard key={`rec-skel-${i}`} />
+                      ))
+                    : recommended.length > 0
+                      ? recommended.map((song) => (
+                          <SongCard
+                            key={song.id}
+                            id={song.id}
+                            image={toImage(song)}
+                            artist={toArtistLabel(song)}
+                            title={song.name}
+                            playCount={song.playCount}
+                          />
+                        ))
+                      : Array.from({ length: 6 }).map((_, i) => (
+                          <SongCard key={`rec-empty-${i}`} />
+                        ))}
+                </div>
+                <ScrollBar orientation="horizontal" className="hidden sm:flex" />
+              </ScrollArea>
+            </div>
           </div>
         </section>
       )}
 
       {user && (
-        <section className="mt-6 relative z-10 rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm p-5 ml-2 mr-4">
-          <div>
-            <h2 className="text-xl font-semibold">Recently Played</h2>
-            <p className="text-sm text-muted-foreground">
-              From your account activity.
-            </p>
-          </div>
-          <div className="mt-4">
-            <ScrollArea>
-              <div className="flex gap-4">
-                {recentLoading
-                  ? Array.from({ length: 6 }).map((_, i) => (
-                      <SongCard key={`recent-skel-${i}`} />
-                    ))
-                  : recentlyPlayed.length > 0
-                    ? recentlyPlayed.map((song) => (
-                        <SongCard
-                          key={song.id}
-                          id={song.id}
-                          image={toImage(song)}
-                          artist={toArtistLabel(song)}
-                          title={song.name}
-                          playCount={song.playCount}
-                        />
+        <section className={trendingSectionClass}>
+          <div className={trendingInnerClass}>
+            <div>
+              <h2 className="text-3xl sm:text-4xl font-semibold leading-[1.08] tracking-tight text-white">
+                Recently Played
+              </h2>
+              <p className="mt-1 text-sm sm:text-base text-white/75">
+                From your account activity.
+              </p>
+            </div>
+            <div className="mt-4">
+              <ScrollArea>
+                <div className="flex gap-4 pb-4">
+                  {recentLoading
+                    ? Array.from({ length: 6 }).map((_, i) => (
+                        <SongCard key={`recent-skel-${i}`} />
                       ))
-                    : Array.from({ length: 6 }).map((_, i) => (
-                        <SongCard key={`recent-empty-${i}`} />
-                      ))}
-              </div>
-              <ScrollBar orientation="horizontal" className="hidden sm:flex" />
-            </ScrollArea>
+                    : recentlyPlayed.length > 0
+                      ? recentlyPlayed.map((song) => (
+                          <SongCard
+                            key={song.id}
+                            id={song.id}
+                            image={toImage(song)}
+                            artist={toArtistLabel(song)}
+                            title={song.name}
+                            playCount={song.playCount}
+                          />
+                        ))
+                      : Array.from({ length: 6 }).map((_, i) => (
+                          <SongCard key={`recent-empty-${i}`} />
+                        ))}
+                </div>
+                <ScrollBar orientation="horizontal" className="hidden sm:flex" />
+              </ScrollArea>
+            </div>
           </div>
         </section>
       )}
