@@ -4,6 +4,7 @@ import AlbumCard from "@/components/cards/album";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { decodeHTML } from "@/lib/decode-html";
+import { capitalizeWords } from "@/lib/utils";
 import { Users, CheckCircle } from "lucide-react";
 import HeroPlayButton from "@/components/artist/hero-play-button";
 
@@ -49,7 +50,7 @@ export default async function ArtistPage({ params }) {
                                     </span>
                                 )}
                                 {Number(data.followerCount) > 0 && <span>•</span>}
-                                <span>{data.dominantLanguage} {data.dominantType}</span>
+                                <span>{capitalizeWords(data.dominantLanguage)} {capitalizeWords(data.dominantType)}</span>
                             </div>
                             {firstSongId && (
                                 <div className="mt-4 flex items-center justify-center md:justify-start">
