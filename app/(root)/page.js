@@ -469,13 +469,13 @@ export default function Page() {
   }, []);
 
   const mainLayoutClass = user
-    ? "min-h-screen pt-4 pb-10 px-6 md:px-20 lg:px-32"
+    ? "min-h-screen pt-4 pb-10 px-0"
     : "min-h-screen pt-0 pb-10 px-0";
   const trendingSectionClass = user
-    ? "relative z-10 isolate mt-8 px-6 py-5 md:px-20 lg:px-32 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm -ml-8 md:-ml-24 lg:-ml-36 mr-4"
+    ? "relative z-10 isolate mt-8 px-6 py-5 md:px-20 lg:px-32 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm ml-2 mr-4"
     : "relative z-10 isolate mt-[30px] pt-5 pb-3 overflow-hidden rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm ml-2 mr-4";
   const trendingInnerClass = user
-    ? "relative z-10"
+    ? "relative z-10 px-5 md:px-7 lg:px-8"
     : "relative z-10 px-5 md:px-7 lg:px-8";
 
 
@@ -483,7 +483,7 @@ export default function Page() {
     <main className={`${mainLayoutClass} relative`}>
 
       {user && (
-        <section className="relative z-10 rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm p-5">
+        <section className="relative z-10 rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm p-5 ml-2 mr-4">
           <div className="flex items-end justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
@@ -526,7 +526,7 @@ export default function Page() {
       )}
 
       {user && (
-        <section className="mt-6 relative z-10 rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm p-5">
+        <section className="mt-6 relative z-10 rounded-2xl border border-border/60 bg-secondary/20 backdrop-blur-sm p-5 ml-2 mr-4">
           <div>
             <h2 className="text-xl font-semibold">Recently Played</h2>
             <p className="text-sm text-muted-foreground">
