@@ -7,6 +7,7 @@ import { FaFire } from "react-icons/fa";
 import { decodeHTML } from "@/lib/decode-html";
 import AdaptiveImage from "@/components/ui/adaptive-image";
 import { useAuth } from "@/hooks/use-auth";
+import { requireAuthToPlay } from "@/lib/auth-gate";
 import { toast } from "sonner";
 import { Heart, ListMusic, Music2, Play, Plus, Share2 } from "lucide-react";
 import {
@@ -62,6 +63,7 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
 
     const playSong = () => {
         if (!songId) return;
+        if (!requireAuthToPlay(user)) return;
         ids?.setMusic?.(songId);
         ids?.setPlayRequested?.(true);
         setLastPlayed();
