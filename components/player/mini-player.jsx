@@ -225,7 +225,7 @@ export default function MiniPlayer({ open = true }) {
 
   return (
     <div className="px-2 pb-2">
-      <div className="glow-card rounded-xl bg-secondary/50 p-2.5 w-full">
+      <div className="rounded-xl bg-secondary/50 p-2.5 w-full">
         <div className="flex items-center gap-2.5">
           {songImg ? (
             <img
