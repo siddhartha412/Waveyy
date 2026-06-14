@@ -27,7 +27,7 @@ import { usePathname } from "next/navigation";
 import LikeSongButton from "@/components/playlists/like-song-button";
 import { selectBestAudioUrl } from "@/lib/audio-quality";
 
-export default function Player() {
+export default function Player({ rightSidebarOpen = true, onToggleRightSidebar = () => {} }) {
   const [mounted, setMounted] = useState(false);
   const [data, setData] = useState(null);
   const [isLooping, setIsLooping] = useState(false);
@@ -497,17 +497,17 @@ export default function Player() {
       {/* Desktop: dock a permanent right sidebar (Spotify-like) */}
       {isDesktop && !tvOpen && (
         <aside
-          className={`hidden lg:block fixed right-0 top-[84px] h-[calc(100vh-100px)] w-[360px] border border-border/60 bg-secondary/20 backdrop-blur-[40px] z-[90] rounded-2xl m-2 transition-all duration-300 ease-smooth ${
-            isClosing ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"
-          }`}
+          className={`hidden lg:block fixed right-0 top-[84px] h-[calc(100vh-100px)] border border-border/60 bg-secondary/20 backdrop-blur-[40px] z-[90] rounded-2xl m-2 transition-[width] duration-300 ease-smooth ${
+            rightSidebarOpen ? "w-[360px]" : "w-[66px]"
+          } ${isClosing ? "translate-x-full opacity-0 pointer-events-none" : "translate-x-0 opacity-100"}`}
         >
-          <SidebarPlayer />
+          <SidebarPlayer open={rightSidebarOpen} onToggle={onToggleRightSidebar} />
         </aside>
       )}
 
       {(!playerOpen || isDesktop) && !tvOpen && (
       <div className={`fixed z-[100] bg-background/80 backdrop-blur-[40px] saturate-[180%] border border-border/60 surface-shadow-lg rounded-2xl transition-all duration-300 ease-smooth ${
-        !isDesktop ? "left-0 right-0 h-[76px] bottom-[68px] px-2 mx-2" : "left-[282px] right-[368px] h-[96px] bottom-2 mx-2"
+        !isDesktop ? "left-0 right-0 h-[76px] bottom-[68px] px-2 mx-2" : `left-[282px] h-[96px] bottom-2 mx-2 ${rightSidebarOpen ? "right-[368px]" : "right-[100px]"}`
       }`}>
         <div className="absolute top-0 left-2 right-2 -translate-y-[1px]">
           <Slider
