@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import UserPanel from "./user-panel";
+import MiniPlayer from "@/components/player/mini-player";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -23,7 +24,7 @@ const navItems = [
 
 export default function SidebarNav({ open = true, onToggle = () => {} }) {
   const pathname = usePathname();
-  const { playlists, createPlaylist, isLikedPlaylist } = useMusicProvider();
+  const { playlists, createPlaylist, isLikedPlaylist, music } = useMusicProvider();
   const { user } = useAuth();
 
   const handleCreate = () => {
@@ -217,7 +218,10 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
       ) : (
         <div className="flex-1" />
       )}
-      <UserPanel open={open} />
+      <div className="mt-auto">
+        <MiniPlayer open={open} />
+        <UserPanel open={open} />
+      </div>
     </aside>
   );
 }

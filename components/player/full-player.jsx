@@ -22,6 +22,8 @@ import {
   useMusicProvider,
   useNextMusicProvider,
 } from "@/hooks/use-context";
+import { useAuth } from "@/hooks/use-auth";
+import { requireAuthToPlay } from "@/lib/auth-gate";
 import { IoPause } from "react-icons/io5";
 import { getLyrics } from "@/lib/lyrics-client";
 import { decodeHTML } from "@/lib/decode-html";
@@ -82,6 +84,7 @@ export default function Player({ id, mode = "page", onClose }) {
   const recRequestRef = useRef(0);
   const tvControlsTimerRef = useRef(null);
   const localAudioRef = useRef(null);
+  const { user } = useAuth();
 
   const getAudioElement = () => audioRef.current || localAudioRef.current;
 
@@ -238,6 +241,7 @@ export default function Player({ id, mode = "page", onClose }) {
     }
 
     if (audio.paused || audio.ended) {
+      if (!requireAuthToPlay(user)) return;
       audio.play().catch((err) => {
         // play() can fail due to autoplay restrictions — handle silently
         console.warn("audio.play() failed:", err);
@@ -247,7 +251,7 @@ export default function Player({ id, mode = "page", onClose }) {
       audio.pause();
       setPlaying(false);
     }
-  }, []);
+  }, [user]);
 
   const seekToTime = (time) => {
     const audio = getAudioElement();
@@ -442,7 +446,9 @@ export default function Player({ id, mode = "page", onClose }) {
         }
       } else {
         setCurrent(0);
-        setMusic(id);
+        if (requireAuthToPlay(user)) {
+          setMusic(id);
+        }
         const audio = getAudioElement();
         if (audio) {
           audio.currentTime = 0;
