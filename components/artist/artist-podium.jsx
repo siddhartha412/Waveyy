@@ -1,15 +1,19 @@
 "use client";
 
 import { useMusicProvider } from "@/hooks/use-context";
+import { useAuth } from "@/hooks/use-auth";
+import { requireAuthToPlay } from "@/lib/auth-gate";
 import { decodeHTML } from "@/lib/decode-html";
 import { formatPlayCount } from "@/lib/utils";
 import { IoPlay } from "react-icons/io5";
 
 export default function ArtistPodium({ songs }) {
     const { setMusic, setPlayRequested } = useMusicProvider();
+    const { user } = useAuth();
 
     const playSong = (songId) => {
         if (!songId) return;
+        if (!requireAuthToPlay(user)) return;
         setMusic(songId);
         setPlayRequested(true);
     };

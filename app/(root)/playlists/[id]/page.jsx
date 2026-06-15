@@ -7,6 +7,7 @@ import { ArrowLeft, Heart, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
 import { useAuth } from "@/hooks/use-auth";
+import { requireAuthToPlay } from "@/lib/auth-gate";
 import { toast } from "sonner";
 
 export default function PlaylistDetailPage() {
@@ -79,6 +80,7 @@ export default function PlaylistDetailPage() {
   });
 
   const playFromIndex = (startIndex = 0) => {
+    if (!requireAuthToPlay(user)) return;
     if (playlist.songs.length === 0) return;
     const firstSong = playlist.songs[startIndex];
     if (!firstSong) return;
