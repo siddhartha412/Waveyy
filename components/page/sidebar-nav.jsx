@@ -9,6 +9,7 @@ import {
   Home,
   Library,
   Plus,
+  Settings,
 } from "lucide-react";
 import { useMusicProvider } from "@/hooks/use-context";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ const navItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/playlists", label: "Playlists", icon: Library },
 ];
+
+const profileNavItem = { href: "/profile", label: "Profile", icon: Settings };
 
 export default function SidebarNav({ open = true, onToggle = () => {} }) {
   const pathname = usePathname();
@@ -40,8 +43,10 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
   };
 
   const visibleNavItems = user
-    ? navItems
-    : navItems.filter((item) => item.href === "/");
+    ? pathname === "/profile"
+      ? [...navItems, profileNavItem]
+      : navItems
+    : navItems;
   const getPlaylistImages = (playlist) => {
     if (!Array.isArray(playlist?.songs)) return [];
     return playlist.songs
