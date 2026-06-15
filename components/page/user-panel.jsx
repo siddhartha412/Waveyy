@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { LogOut, User } from "lucide-react";
+import { LogOut, Settings, User } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 
@@ -26,6 +27,8 @@ const getAvatarFallback = (user) => {
 
 export default function UserPanel({ open = true }) {
   const { user, loading, signOut } = useAuth();
+  const pathname = usePathname();
+  const isProfilePage = pathname === "/profile";
 
   const handleLogout = async () => {
     const { error } = await signOut();
@@ -96,6 +99,30 @@ export default function UserPanel({ open = true }) {
   const avatarUrl = getAvatarUrl(user);
   const initials = getAvatarFallback(user);
 
+  if (isProfilePage) {
+    return (
+      <div className={`mt-auto ${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
+        {open ? (
+          <button
+            onClick={handleLogout}
+            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-red-500/10 text-red-500 text-xs font-medium h-9 hover:bg-red-500/20 transition-all duration-200 ease-smooth"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Logout
+          </button>
+        ) : (
+          <button
+            onClick={handleLogout}
+            className="h-9 w-9 rounded-full bg-red-500/10 flex items-center justify-center hover:bg-red-500/20 transition-all duration-200 ease-smooth"
+            title="Logout"
+          >
+            <LogOut className="h-4 w-4 text-red-500" />
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className={`mt-auto ${open ? "px-2 pb-2" : "p-2 flex justify-center"}`}>
       {open ? (
@@ -110,33 +137,24 @@ export default function UserPanel({ open = true }) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-medium truncate">{getUserLabel(user)}</p>
-              {user.email && (
-                <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-              )}
             </div>
-          </div>
-          <div className="mt-2 flex gap-2">
-            <button
-              onClick={handleLogout}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-secondary text-foreground text-xs font-medium h-8 hover:bg-secondary/80 transition-all duration-200 ease-smooth surface-shadow-sm"
+            <Link
+              href="/profile"
+              className="shrink-0 text-muted-foreground hover:text-foreground transition-colors"
+              title="Settings"
             >
-              <LogOut className="h-3.5 w-3.5" />
-              Logout
-            </button>
+              <Settings className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       ) : (
-        <button
-          onClick={handleLogout}
-          className="h-9 w-9 rounded-full overflow-hidden bg-secondary/50 flex items-center justify-center hover:bg-secondary/80 transition-all duration-200 ease-smooth surface-shadow-sm"
-          title={getUserLabel(user)}
+        <Link
+          href="/profile"
+          className="h-9 w-9 rounded-full bg-secondary/50 flex items-center justify-center hover:bg-secondary/80 transition-all duration-200 ease-smooth surface-shadow-sm"
+          title="Settings"
         >
-          {avatarUrl ? (
-            <img src={avatarUrl} alt={getUserLabel(user)} className="h-full w-full object-cover" />
-          ) : (
-            <span className="text-xs font-semibold">{initials}</span>
-          )}
-        </button>
+          <Settings className="h-4 w-4 text-muted-foreground" />
+        </Link>
       )}
     </div>
   );

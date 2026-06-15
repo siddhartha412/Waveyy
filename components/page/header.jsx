@@ -1,13 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import Logo from "./logo";
 import Search from "./search";
 import { usePathname } from "next/navigation";
 import { useMusicProvider } from "@/hooks/use-context";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import AuthActions from "./auth-actions";
 import { Home } from "lucide-react";
 
 export default function Header({ sidebarOpen = true }) {
@@ -16,7 +14,6 @@ export default function Header({ sidebarOpen = true }) {
   const isDesktop = useMediaQuery("(min-width: 1024px)");
   const isSmUp = useMediaQuery("(min-width: 640px)");
   const isAuthPage = path === "/login" || path === "/signup";
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
 
   if (playerOpen && !isDesktop) return null;
 
@@ -52,15 +49,10 @@ export default function Header({ sidebarOpen = true }) {
           </div>
         )}
 
-        {!isAuthPage && (
-          <div className="ml-auto shrink-0 sm:ml-0 sm:justify-self-end">
-            <AuthActions onMenuOpenChange={setIsAccountMenuOpen} />
-          </div>
-        )}
       </div>
 
       {!isAuthPage && (
-        <div className={`mt-3 sm:hidden ${isAccountMenuOpen ? "hidden" : "block"}`}>
+        <div className="mt-3 sm:hidden">
           <Search />
         </div>
       )}
