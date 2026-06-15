@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import Player from "@/components/cards/player";
 import Footer from "@/components/page/footer";
 import Header from "@/components/page/header";
@@ -94,6 +95,14 @@ const normalizeText = (value) =>
     .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+
+const getSongKey = (song) => {
+  const title = normalizeText(song?.name || song?.title || "");
+  const artist = normalizeText(
+    (song?.artists?.primary || []).map((a) => a?.name).filter(Boolean).join(" ") || "",
+  );
+  return `${title}||${artist}`;
+};
 
 const TRENDING_ARTIST_BLOCKLIST = [
   /top \d+/i,
@@ -296,6 +305,7 @@ export default function Page() {
 
         const recentIdSet = new Set(uniqueRecentIds);
         const seen = new Set();
+        const seenTitleArtist = new Set();
         const collected = [];
 
         for (const tag of topGenres) {
@@ -305,9 +315,16 @@ export default function Page() {
             const data = await res.json();
             const results = data?.data?.results || [];
             for (const song of results) {
-              if (!song?.id || seen.has(song.id) || recentIdSet.has(song.id))
+              const key = getSongKey(song);
+              if (
+                !song?.id ||
+                seen.has(song.id) ||
+                recentIdSet.has(song.id) ||
+                seenTitleArtist.has(key)
+              )
                 continue;
               seen.add(song.id);
+              seenTitleArtist.add(key);
               collected.push(song);
               if (collected.length >= 20) break;
             }
@@ -326,9 +343,16 @@ export default function Page() {
             });
             const spotifyData = await spotifyRes.json();
             for (const song of spotifyData?.data || []) {
-              if (!song?.id || seen.has(song.id) || recentIdSet.has(song.id))
+              const key = getSongKey(song);
+              if (
+                !song?.id ||
+                seen.has(song.id) ||
+                recentIdSet.has(song.id) ||
+                seenTitleArtist.has(key)
+              )
                 continue;
               seen.add(song.id);
+              seenTitleArtist.add(key);
               collected.push(song);
               if (collected.length >= 20) break;
             }
@@ -342,14 +366,56 @@ export default function Page() {
             const fallbackRes = await getSongsSuggestions(uniqueRecentIds[0]);
             const fallbackData = await fallbackRes.json();
             for (const song of fallbackData?.data || []) {
-              if (!song?.id || seen.has(song.id) || recentIdSet.has(song.id))
+              const key = getSongKey(song);
+              if (
+                !song?.id ||
+                seen.has(song.id) ||
+                recentIdSet.has(song.id) ||
+                seenTitleArtist.has(key)
+              )
                 continue;
               seen.add(song.id);
+              seenTitleArtist.add(key);
               collected.push(song);
               if (collected.length >= 20) break;
             }
           } catch {
             // Keep empty state.
+          }
+        }
+
+        const genericFallbackQueries = [
+          "Top Hits",
+          "Popular Songs",
+          "Bollywood Hits",
+          "Indie Pop",
+          "Dance Hits",
+          "Trending Now",
+        ];
+
+        for (const query of genericFallbackQueries) {
+          if (collected.length >= 20) break;
+          try {
+            const res = await getSongsByQuery(query, 12);
+            if (!res) continue;
+            const data = await res.json();
+            const results = data?.data?.results || [];
+            for (const song of results) {
+              const key = getSongKey(song);
+              if (
+                !song?.id ||
+                seen.has(song.id) ||
+                recentIdSet.has(song.id) ||
+                seenTitleArtist.has(key)
+              )
+                continue;
+              seen.add(song.id);
+              seenTitleArtist.add(key);
+              collected.push(song);
+              if (collected.length >= 20) break;
+            }
+          } catch {
+            // Ignore generic fallback failures.
           }
         }
 
@@ -479,7 +545,7 @@ export default function Page() {
   return (
     <main className={`${mainLayoutClass} relative`}>
 
-      {user && (
+      {user && (recLoading || recommended.length > 0) && (
         <section className={trendingSectionClass}>
           <div className={trendingInnerClass}>
             <div className="flex items-end justify-between gap-4">
@@ -487,11 +553,6 @@ export default function Page() {
                 <h1 className="text-3xl sm:text-4xl font-semibold leading-[1.08] tracking-tight text-white">
                   Made for You
                 </h1>
-                <p className="mt-1 text-sm sm:text-base text-white/75">
-                  {recommendedGenres.length
-                    ? `Based on your last 5 days: ${recommendedGenres.join(", ")}`
-                    : "Personalized picks from your last 5 days of listening."}
-                </p>
               </div>
             </div>
 
@@ -513,9 +574,7 @@ export default function Page() {
                             playCount={song.playCount}
                           />
                         ))
-                      : Array.from({ length: 6 }).map((_, i) => (
-                          <SongCard key={`rec-empty-${i}`} />
-                        ))}
+                      : null}
                 </div>
                 <ScrollBar orientation="horizontal" className="hidden sm:flex" />
               </ScrollArea>
@@ -524,7 +583,7 @@ export default function Page() {
         </section>
       )}
 
-      {user && (
+      {(user && (recentLoading || recentlyPlayed.length > 0)) && (
         <section className={trendingSectionClass}>
           <div className={trendingInnerClass}>
             <div>
@@ -536,29 +595,32 @@ export default function Page() {
               </p>
             </div>
             <div className="mt-4">
-              <ScrollArea>
-                <div className="flex gap-4 pb-4">
-                  {recentLoading
-                    ? Array.from({ length: 6 }).map((_, i) => (
-                        <SongCard key={`recent-skel-${i}`} />
-                      ))
-                    : recentlyPlayed.length > 0
-                      ? recentlyPlayed.map((song) => (
-                          <SongCard
-                            key={song.id}
-                            id={song.id}
-                            image={toImage(song)}
-                            artist={toArtistLabel(song)}
-                            title={song.name}
-                            playCount={song.playCount}
-                          />
-                        ))
-                      : Array.from({ length: 6 }).map((_, i) => (
-                          <SongCard key={`recent-empty-${i}`} />
-                        ))}
-                </div>
-                <ScrollBar orientation="horizontal" className="hidden sm:flex" />
-              </ScrollArea>
+              {recentLoading ? (
+                <ScrollArea>
+                  <div className="flex gap-4 pb-4">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <SongCard key={`recent-skel-${i}`} />
+                    ))}
+                  </div>
+                  <ScrollBar orientation="horizontal" className="hidden sm:flex" />
+                </ScrollArea>
+              ) : recentlyPlayed.length > 0 ? (
+                <ScrollArea>
+                  <div className="flex gap-4 pb-4">
+                    {recentlyPlayed.map((song) => (
+                      <SongCard
+                        key={song.id}
+                        id={song.id}
+                        image={toImage(song)}
+                        artist={toArtistLabel(song)}
+                        title={song.name}
+                        playCount={song.playCount}
+                      />
+                    ))}
+                  </div>
+                  <ScrollBar orientation="horizontal" className="hidden sm:flex" />
+                </ScrollArea>
+              ) : null}
             </div>
           </div>
         </section>

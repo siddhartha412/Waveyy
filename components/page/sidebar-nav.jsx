@@ -10,6 +10,7 @@ import {
   Library,
   Plus,
   Settings,
+  Users,
 } from "lucide-react";
 import { useMusicProvider } from "@/hooks/use-context";
 import { Button } from "@/components/ui/button";
@@ -47,6 +48,12 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
       ? [...navItems, profileNavItem]
       : navItems
     : navItems;
+
+  const handleTogether = () => {
+    toast("Together feature is coming soon", {
+      icon: "🎶",
+    });
+  };
   const getPlaylistImages = (playlist) => {
     if (!Array.isArray(playlist?.songs)) return [];
     return playlist.songs
@@ -146,6 +153,17 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
             </Link>
           );
         })}
+        <button
+          type="button"
+          onClick={handleTogether}
+          className={`mb-0.5 flex items-center rounded-lg px-2.5 py-1.5 text-sm transition-all duration-200 ease-smooth ${
+            open ? "gap-2.5 justify-start" : "justify-center"
+          } text-muted-foreground hover:bg-secondary/50 hover:text-foreground`}
+          title="Together"
+        >
+          <Users className="h-4 w-4 shrink-0" />
+          {open ? <span className="truncate">Together</span> : null}
+        </button>
       </div>
       {user ? (
         <>

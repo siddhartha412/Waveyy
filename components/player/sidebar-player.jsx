@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
 import { getSongsById } from "@/lib/fetch";
 import { getLyrics } from "@/lib/lyrics-client";
 import { useMusicProvider } from "@/hooks/use-context";
 import { decodeHTML } from "@/lib/decode-html";
 import { toHinglish } from "@/lib/hinglish";
 import QueueList from "@/components/player/queue-list";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Music2, ListMusic } from "lucide-react";
+import { ChevronLeft, ChevronRight, Music2, ListMusic, Users } from "lucide-react";
 
 const parseLrc = (lrcText = "") => {
   const lines = lrcText.split("\n");
@@ -112,7 +112,7 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
     const elRect = el.getBoundingClientRect();
     const offset =
       elRect.top - containerRect.top - containerRect.height / 2 + elRect.height / 2;
-    container.scrollBy({ top: offset, behavior: "auto" });
+    container.scrollBy({ top: offset, behavior: "smooth" });
   }, [activeLine]);
 
   return (
@@ -165,37 +165,44 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
                 <div className="mt-4 text-sm text-muted-foreground">
                   Pick a song to see lyrics here.
                 </div>
-              ) : isLyricsLoading ? (
-                <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
-                  <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
-                  Fetching lyrics...
-                </div>
-              ) : lyricsLines.length > 0 ? (
-                <div ref={containerRef} className="mt-4 h-[calc(100%-1.5rem)] overflow-y-auto pr-2">
-                  <div className="pt-6 pb-14">
-                    {lyricsLines.map((line, idx) => (
-                      <button
-                        key={`${line.time}-${idx}`}
-                        ref={(el) => {
-                          lineRefs.current[idx] = el;
-                        }}
-                        onClick={() => {
-                          if (audioRef.current) audioRef.current.currentTime = line.time;
-                        }}
-                        className={`block w-full text-left py-1.5 text-sm leading-relaxed transition-colors ${
-                          idx === activeLine
-                            ? "text-foreground font-semibold"
-                            : "text-foreground/60"
-                        }`}
-                      >
-                        {toHinglish(line.text || "…")}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               ) : (
-                <div className="mt-4 text-sm text-foreground/80 whitespace-pre-line">
-                  {toHinglish(lyricsText) || "Lyrics are not available for this track."}
+                <div className="mt-4 flex flex-col gap-4">
+                  {isLyricsLoading ? (
+                    <div className="mt-3 text-sm text-muted-foreground flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full bg-muted-foreground animate-pulse" />
+                      Fetching lyrics...
+                    </div>
+                  ) : lyricsLines.length > 0 ? (
+                    <div
+                      ref={containerRef}
+                      className="mt-4 h-[calc(100%-1.5rem)] overflow-y-auto pr-2 lyrics-font"
+                    >
+                      <div className="pt-6 pb-14">
+                        {lyricsLines.map((line, idx) => (
+                          <button
+                            key={`${line.time}-${idx}`}
+                            ref={(el) => {
+                              lineRefs.current[idx] = el;
+                            }}
+                            onClick={() => {
+                              if (audioRef.current) audioRef.current.currentTime = line.time;
+                            }}
+                            className={`block w-full text-left py-1.5 text-sm leading-relaxed transition-colors ${
+                              idx === activeLine
+                                ? "text-foreground font-semibold"
+                                : "text-foreground/60"
+                            }`}
+                          >
+                            {toHinglish(line.text || "…")}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-4 text-sm text-foreground/80 whitespace-pre-line lyrics-font">
+                      {toHinglish(lyricsText) || "Lyrics are not available for this track."}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -225,6 +232,14 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
           <div className="flex flex-col items-center gap-2 mt-auto mb-4">
             <Music2 className="h-4 w-4 text-muted-foreground" title="Lyrics" />
             <ListMusic className="h-4 w-4 text-muted-foreground" title="Queue" />
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/70"
+              title="Together"
+            >
+              <Users className="h-4 w-4" />
+            </Button>
           </div>
         </div>
       )}

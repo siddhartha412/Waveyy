@@ -11,6 +11,7 @@ import {
   SkipBack,
   SkipForward,
   X,
+  Users,
 } from "lucide-react";
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -526,7 +527,7 @@ export default function Player({ id, mode = "page", onClose }) {
     const elRect = el.getBoundingClientRect();
     const offset =
       elRect.top - containerRect.top - containerRect.height / 2 + elRect.height / 2;
-    container.scrollBy({ top: offset, behavior: "auto" });
+    container.scrollBy({ top: offset, behavior: "smooth" });
   }, [activeLine]);
 
   // === Spacebar play/pause handler ===
@@ -1007,36 +1008,42 @@ export default function Player({ id, mode = "page", onClose }) {
                     Fetching lyrics...
                   </div>
                 ) : lyricsLines.length > 0 ? (
-                  <div
-                    ref={lyricsContainerRef}
-                    className="mt-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1"
-                  >
-                    <div className="py-16">
-                      {lyricsLines.map((line, idx) => (
-                        <button
-                          key={`${line.time}-${idx}`}
-                          ref={(el) => {
-                            lineRefs.current[idx] = el;
-                          }}
-                          onClick={() => {
-                            const audio = getAudioElement();
-                            if (audio) {
-                              audio.currentTime = line.time;
-                            }
-                          }}
-                          className={`text-left w-full py-1 text-sm leading-relaxed transition-colors ${
-                            idx === activeLine
-                              ? "text-foreground font-semibold"
-                              : "text-foreground/60"
-                          }`}
-                        >
-                          {toHinglish(line.text || "…")}
-                        </button>
+                  <>
+                    <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+                      <Users className="h-4 w-4" />
+                      <span className="font-semibold">Together</span>
+                    </div>
+                    <div
+                      ref={lyricsContainerRef}
+                      className="mt-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1 lyrics-font"
+                    >
+                      <div className="py-16">
+                        {lyricsLines.map((line, idx) => (
+                          <button
+                            key={`${line.time}-${idx}`}
+                            ref={(el) => {
+                              lineRefs.current[idx] = el;
+                            }}
+                            onClick={() => {
+                              const audio = getAudioElement();
+                              if (audio) {
+                                audio.currentTime = line.time;
+                              }
+                            }}
+                            className={`text-left w-full py-1 text-sm leading-relaxed transition-colors ${
+                              idx === activeLine
+                                ? "text-foreground font-semibold"
+                                : "text-foreground/60"
+                            }`}
+                          >
+                            {toHinglish(line.text || "…")}
+                          </button>
                       ))}
                     </div>
                   </div>
+                  </>
                 ) : (
-                  <div className="mt-3 text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+                  <div className="mt-3 text-sm leading-relaxed text-foreground/90 whitespace-pre-line lyrics-font">
                     {toHinglish(
                       lyricsText ||
                         data?.lyrics?.lyrics ||

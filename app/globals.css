@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Baloo+Bhai+2:wght@400..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -143,5 +145,9 @@
   }
   .glass-shine:hover::before {
     transform: translateX(100%);
+  }
+
+  .lyrics-font {
+    font-family: 'Baloo Bhai 2', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
 }
