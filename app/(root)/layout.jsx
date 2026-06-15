@@ -18,12 +18,13 @@ export default function RootLayout({ children }) {
     const isAuthPage = pathname === "/login" || pathname === "/signup";
     const handledAuthErrorRef = useRef(false);
     const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
     const sidebarPadding = sidebarOpen
         ? "lg:pl-[282px]"
         : "lg:pl-[100px]";
     const rightPlayerPadding = music && isDesktop
-        ? "lg:pr-[392px]"
+        ? rightSidebarOpen ? "lg:pr-[392px]" : "lg:pr-[100px]"
         : "";
 
     useEffect(() => {
@@ -82,7 +83,7 @@ export default function RootLayout({ children }) {
                 {children}
             </div>
             <MobileBottomNav />
-            <Player />
+            <Player rightSidebarOpen={rightSidebarOpen} onToggleRightSidebar={() => setRightSidebarOpen((prev) => !prev)} />
             <Footer sidebarOpen={sidebarOpen} />
         </main>
     )
