@@ -16,12 +16,13 @@ app.prepare().then(() => {
   const io = new Server(httpServer);
 
   const roomHosts = {};
+  const roomUsers = {};
 
   io.on("connection", (socket) => {
     console.log(`User connected: ${socket.id}`);
 
     // Join a room
-    socket.on("join-room", (roomId) => {
+    socket.on("join-room", (roomId, userProfile) => {
       socket.join(roomId);
       console.log(`User ${socket.id} joined room ${roomId}`);
       
@@ -29,8 +30,20 @@ app.prepare().then(() => {
         roomHosts[roomId] = socket.id;
       }
       
+      if (!roomUsers[roomId]) {
+        roomUsers[roomId] = {};
+      }
+      
+      roomUsers[roomId][socket.id] = {
+        id: socket.id,
+        user: userProfile || { name: "Guest" }
+      };
+      
       // Notify others in the room
       socket.to(roomId).emit("user-joined", socket.id);
+      
+      // Broadcast updated user list to everyone in the room
+      io.to(roomId).emit("room-users-update", Object.values(roomUsers[roomId]));
       
       // Tell this user if they are the host
       socket.emit("host-status", roomHosts[roomId] === socket.id);
@@ -75,6 +88,14 @@ app.prepare().then(() => {
           } else {
             delete roomHosts[roomId];
           }
+        }
+      }
+      
+      // Remove from roomUsers
+      for (const roomId in roomUsers) {
+        if (roomUsers[roomId] && roomUsers[roomId][socket.id]) {
+          delete roomUsers[roomId][socket.id];
+          io.to(roomId).emit("room-users-update", Object.values(roomUsers[roomId]));
         }
       }
     });

@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Library } from "lucide-react";
+import { Home, Library, Users } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useMusicProvider } from "@/hooks/use-context";
 
 const items = [
   { href: "/", label: "Home", icon: Home },
   { href: "/playlists", label: "Playlists", icon: Library },
+  { href: "/together", label: "Together", icon: Users },
 ];
 
 export default function MobileBottomNav() {
@@ -20,16 +21,17 @@ export default function MobileBottomNav() {
 
   if (isAuthPage) return null;
   if (playerOpen) return null;
-  const visibleItems = user ? items : items.filter((item) => item.href === "/");
+  const visibleItems = user ? items : items.filter((item) => item.href === "/" || item.href === "/together");
 
   return (
     <nav className="waveyy-mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-md">
-      <div className={`grid h-14 ${visibleItems.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+      <div className={`grid h-14 ${visibleItems.length === 1 ? "grid-cols-1" : visibleItems.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const active =
             pathname === item.href ||
-            (item.href === "/playlists" && pathname?.startsWith("/playlists/"));
+            (item.href === "/playlists" && pathname?.startsWith("/playlists/")) ||
+            (item.href === "/together" && pathname?.startsWith("/together"));
           return (
             <Link
               key={item.href}

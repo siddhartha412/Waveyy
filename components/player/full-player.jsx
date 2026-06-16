@@ -47,6 +47,8 @@ export default function Player({ id, mode = "page", onClose }) {
   const [clockTime, setClockTime] = useState(() => new Date());
   const [showTvCloseButton, setShowTvCloseButton] = useState(true);
   const [useLocalAudio, setUseLocalAudio] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeoutRef = useRef(null);
   const next = useNextMusicProvider();
   const primaryArtists = (data?.artists?.primary || []).map((a) => a?.name).filter(Boolean);
   const artistLabel = primaryArtists.join(", ") || "unknown";
@@ -521,7 +523,7 @@ export default function Player({ id, mode = "page", onClose }) {
     setActiveLine(idx);
   }, [currentTime, lyricsLines]);
 
-  useEffect(() => {
+  const scrollToActiveLine = useCallback(() => {
     if (activeLine < 0) return;
     const container = lyricsContainerRef.current;
     const el = lineRefs.current[activeLine];
@@ -531,8 +533,26 @@ export default function Player({ id, mode = "page", onClose }) {
     const elRect = el.getBoundingClientRect();
     const offset =
       elRect.top - containerRect.top - containerRect.height / 2 + elRect.height / 2;
-    container.scrollBy({ top: offset, behavior: "smooth" });
+    
+    // Check if the element is out of view or if we need to scroll
+    if (Math.abs(offset) > 1) {
+      container.scrollBy({ top: offset, behavior: "smooth" });
+    }
   }, [activeLine]);
+
+  useEffect(() => {
+    if (!isUserScrolling) {
+      scrollToActiveLine();
+    }
+  }, [activeLine, isUserScrolling, scrollToActiveLine]);
+
+  const handleUserScroll = () => {
+    setIsUserScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 2000);
+  };
 
   // === Spacebar play/pause handler ===
   useEffect(() => {
@@ -1022,7 +1042,10 @@ export default function Player({ id, mode = "page", onClose }) {
                   <>
                     <div
                       ref={lyricsContainerRef}
-                      className="mt-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1 lyrics-font"
+                      onWheel={handleUserScroll}
+                      onTouchMove={handleUserScroll}
+                      className="mt-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1 lyrics-font relative"
+                      style={{ scrollbarWidth: "none" }}
                     >
                       <div className="py-16">
                         {lyricsLines.map((line, idx) => (

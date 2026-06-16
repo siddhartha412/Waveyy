@@ -3,6 +3,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { useSocket } from "@/hooks/use-socket";
 import { MusicContext } from "@/hooks/use-context";
+import { useAuth } from "@/hooks/use-auth";
 
 const RoomContext = createContext(null);
 
@@ -12,7 +13,10 @@ export default function RoomProvider({ children }) {
   const socket = useSocket();
   const [roomId, setRoomId] = useState(null);
   const [isHost, setIsHost] = useState(false);
+  const [usersInRoom, setUsersInRoom] = useState([]);
   const isHostRef = useRef(false);
+  
+  const { user } = useAuth() || {};
   
   useEffect(() => {
     isHostRef.current = isHost;
@@ -62,7 +66,19 @@ export default function RoomProvider({ children }) {
   useEffect(() => {
     if (!socket || !roomId) return;
 
-    socket.emit("join-room", roomId);
+    const userProfile = user ? {
+      name: user.user_metadata?.display_name || user.user_metadata?.username || user.email?.split('@')[0] || "User",
+      avatar: user.user_metadata?.avatar_url || null
+    } : {
+      name: "Guest",
+      avatar: null
+    };
+
+    socket.emit("join-room", roomId, userProfile);
+
+    const onRoomUsersUpdate = (users) => {
+      setUsersInRoom(users);
+    };
 
     const onUserJoined = (id) => {
       console.log(`User joined: ${id}`);
@@ -130,6 +146,7 @@ export default function RoomProvider({ children }) {
     };
 
     socket.on("user-joined", onUserJoined);
+    socket.on("room-users-update", onRoomUsersUpdate);
     socket.on("sync-state", onSyncState);
     socket.on("play", onPlay);
     socket.on("pause", onPause);
@@ -140,6 +157,7 @@ export default function RoomProvider({ children }) {
 
     return () => {
       socket.off("user-joined", onUserJoined);
+      socket.off("room-users-update", onRoomUsersUpdate);
       socket.off("sync-state", onSyncState);
       socket.off("play", onPlay);
       socket.off("pause", onPause);
@@ -182,7 +200,8 @@ export default function RoomProvider({ children }) {
       emitPlay,
       emitPause,
       emitSeek,
-      emitChangeSong
+      emitChangeSong,
+      usersInRoom
     }}>
       {children}
     </RoomContext.Provider>

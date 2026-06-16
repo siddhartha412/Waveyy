@@ -41,6 +41,8 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
   const [lyricsLines, setLyricsLines] = useState([]);
   const [lyricsText, setLyricsText] = useState("");
   const [isLyricsLoading, setIsLyricsLoading] = useState(false);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const scrollTimeoutRef = useRef(null);
 
   const activeLine = useMemo(() => {
     if (!lyricsLines.length) return -1;
@@ -103,7 +105,7 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
     };
   }, [song?.name]);
 
-  useEffect(() => {
+  const scrollToActiveLine = useCallback(() => {
     if (activeLine < 0) return;
     const container = containerRef.current;
     const el = lineRefs.current[activeLine];
@@ -112,8 +114,24 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
     const elRect = el.getBoundingClientRect();
     const offset =
       elRect.top - containerRect.top - containerRect.height / 2 + elRect.height / 2;
-    container.scrollBy({ top: offset, behavior: "smooth" });
+    if (Math.abs(offset) > 1) {
+      container.scrollBy({ top: offset, behavior: "smooth" });
+    }
   }, [activeLine]);
+
+  useEffect(() => {
+    if (!isUserScrolling) {
+      scrollToActiveLine();
+    }
+  }, [activeLine, isUserScrolling, scrollToActiveLine]);
+
+  const handleUserScroll = () => {
+    setIsUserScrolling(true);
+    if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    scrollTimeoutRef.current = setTimeout(() => {
+      setIsUserScrolling(false);
+    }, 2000);
+  };
 
   return (
     <div className="h-full w-full flex flex-col">
@@ -175,7 +193,10 @@ export default function SidebarPlayer({ open = true, onToggle = () => {} }) {
                   ) : lyricsLines.length > 0 ? (
                     <div
                       ref={containerRef}
-                      className="mt-4 h-[calc(100%-1.5rem)] overflow-y-auto pr-2 lyrics-font"
+                      onWheel={handleUserScroll}
+                      onTouchMove={handleUserScroll}
+                      className="mt-4 h-[calc(100%-1.5rem)] overflow-y-auto pr-2 lyrics-font relative"
+                      style={{ scrollbarWidth: "none" }}
                     >
                       <div className="pt-6 pb-14">
                         {lyricsLines.map((line, idx) => (

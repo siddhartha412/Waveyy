@@ -3,10 +3,10 @@
 import { useRoom } from "@/components/providers/room-provider";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Users, Copy, DoorOpen } from "lucide-react";
+import { Users, Copy, DoorOpen, User } from "lucide-react";
 
 export default function TogetherPage() {
-  const { roomId, joinRoom, leaveRoom } = useRoom() || {};
+  const { roomId, joinRoom, leaveRoom, usersInRoom } = useRoom() || {};
 
   const handleListenTogether = () => {
     if (roomId) {
@@ -42,6 +42,26 @@ export default function TogetherPage() {
             ? "You are currently in a room. Share the link below to listen with your friends in real-time."
             : "Create a room and invite your friends to listen to music together in real-time."}
         </p>
+
+        {roomId && usersInRoom && usersInRoom.length > 0 && (
+          <div className="mb-6 bg-background/50 rounded-xl p-4 border border-border/50">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 justify-center text-muted-foreground">
+              <Users className="w-4 h-4" /> Users in Room ({usersInRoom.length})
+            </h3>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {usersInRoom.map((u) => (
+                <div key={u.id} className="flex items-center gap-2 bg-secondary/50 px-3 py-1.5 rounded-full text-sm">
+                  {u.user?.avatar ? (
+                    <img src={u.user.avatar} alt={u.user.name} className="w-5 h-5 rounded-full" />
+                  ) : (
+                    <User className="w-4 h-4 text-muted-foreground" />
+                  )}
+                  <span className="max-w-[100px] truncate">{u.user?.name || "Guest"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {roomId ? (
           <div className="space-y-4">
