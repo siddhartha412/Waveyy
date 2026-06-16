@@ -18,6 +18,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import UserPanel from "./user-panel";
 import MiniPlayer from "@/components/player/mini-player";
+import { useRoom } from "@/components/providers/room-provider";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -30,6 +31,7 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
   const pathname = usePathname();
   const { playlists, createPlaylist, isLikedPlaylist, music } = useMusicProvider();
   const { user } = useAuth();
+  const { roomId, joinRoom, leaveRoom } = useRoom() || {};
 
   const handleCreate = () => {
     const name = window.prompt("Playlist name");
@@ -49,11 +51,6 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
       : navItems
     : navItems;
 
-  const handleTogether = () => {
-    toast("Together feature is coming soon", {
-      icon: "🎶",
-    });
-  };
   const getPlaylistImages = (playlist) => {
     if (!Array.isArray(playlist?.songs)) return [];
     return playlist.songs
@@ -153,17 +150,22 @@ export default function SidebarNav({ open = true, onToggle = () => {} }) {
             </Link>
           );
         })}
-        <button
-          type="button"
-          onClick={handleTogether}
+        <Link
+          href="/together"
           className={`mb-0.5 flex items-center rounded-lg px-2.5 py-1.5 text-sm transition-all duration-200 ease-smooth ${
             open ? "gap-2.5 justify-start" : "justify-center"
-          } text-muted-foreground hover:bg-secondary/50 hover:text-foreground`}
-          title="Together"
+          } ${
+            pathname === "/together"
+              ? "bg-secondary/80 text-foreground"
+              : roomId
+              ? "bg-primary/20 text-primary"
+              : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+          }`}
+          title={roomId ? "Listening Together" : "Listen Together"}
         >
           <Users className="h-4 w-4 shrink-0" />
-          {open ? <span className="truncate">Together</span> : null}
-        </button>
+          {open ? <span className="truncate">{roomId ? "Listening Together" : "Listen Together"}</span> : null}
+        </Link>
       </div>
       {user ? (
         <>

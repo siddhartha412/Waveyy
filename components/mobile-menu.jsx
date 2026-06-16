@@ -1,4 +1,4 @@
-import { Home, Search } from "lucide-react";
+import { Home, Search, Users } from "lucide-react";
 import Link from "next/link";
 
 export default function MobileMenu() {
@@ -7,6 +7,7 @@ export default function MobileMenu() {
             <div className="flex bg-primary justify-center w-fit gap-2 items-center p-2 h-fit mb-2 rounded-full">
                 <Link className="rounded-full h-[30px] w-[42px] flex items-center justify-center bg-background text-foreground text-sm gap-2" href="/"><Home className="w-4 h-4" /></Link>
                 <Link className="rounded-full h-[30px] w-[42px] flex items-center justify-center bg-background text-foreground text-sm gap-2" href="/search/latest"><Search className="w-4 h-4" /></Link>
+                <Link className="rounded-full h-[30px] w-[42px] flex items-center justify-center bg-background text-foreground text-sm gap-2" href="/together"><Users className="w-4 h-4" /></Link>
             </div>
         </div>
     );

@@ -8,7 +8,8 @@ import SidebarNav from "@/components/page/sidebar-nav";
 import MobileBottomNav from "@/components/page/mobile-bottom-nav";
 import { useMusicProvider } from "@/hooks/use-context";
 import { useMediaQuery } from "@/hooks/use-media-query";
-import { usePathname } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function RootLayout({ children }) {
@@ -26,6 +27,9 @@ export default function RootLayout({ children }) {
     const rightPlayerPadding = music && isDesktop
         ? rightSidebarOpen ? "lg:pr-[392px]" : "lg:pr-[100px]"
         : "";
+
+    const { user, loading } = useAuth();
+    const router = useRouter();
 
     useEffect(() => {
         if (handledAuthErrorRef.current) return;
@@ -66,6 +70,18 @@ export default function RootLayout({ children }) {
         const cleanUrl = window.location.pathname;
         window.history.replaceState({}, "", cleanUrl);
     }, []);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+        if (loading) return;
+        if (user) return;
+
+        const isMobile = window.matchMedia("(max-width: 767px)").matches;
+        if (!isMobile) return;
+        if (isAuthPage) return;
+
+        router.replace("/login");
+    }, [loading, user, isAuthPage, router]);
 
     return (
         <main>

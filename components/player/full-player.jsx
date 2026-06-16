@@ -32,6 +32,7 @@ import { toHinglish } from "@/lib/hinglish";
 import LikeSongButton from "@/components/playlists/like-song-button";
 import { selectBestAudioUrl } from "@/lib/audio-quality";
 import QueueList from "@/components/player/queue-list";
+import { useRoom } from "@/components/providers/room-provider";
 
 export default function Player({ id, mode = "page", onClose }) {
   // start with an object so checks are straightforward
@@ -86,6 +87,7 @@ export default function Player({ id, mode = "page", onClose }) {
   const tvControlsTimerRef = useRef(null);
   const localAudioRef = useRef(null);
   const { user } = useAuth();
+  const { roomId, emitPlay, emitPause, emitSeek } = useRoom() || {};
 
   const getAudioElement = () => audioRef.current || localAudioRef.current;
 
@@ -232,7 +234,6 @@ export default function Player({ id, mode = "page", onClose }) {
     return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
   };
 
-  // make toggle safe if audioRef isn't ready
   const togglePlayPause = useCallback(() => {
     const audio = getAudioElement();
     if (!audio) {
@@ -248,11 +249,13 @@ export default function Player({ id, mode = "page", onClose }) {
         console.warn("audio.play() failed:", err);
       });
       setPlaying(true);
+      if (emitPlay) emitPlay(audio.currentTime);
     } else {
       audio.pause();
       setPlaying(false);
+      if (emitPause) emitPause(audio.currentTime);
     }
-  }, [user]);
+  }, [user, emitPlay, emitPause]);
 
   const seekToTime = (time) => {
     const audio = getAudioElement();
@@ -262,6 +265,7 @@ export default function Player({ id, mode = "page", onClose }) {
     audio.currentTime = safeTime;
     setCurrentTime(safeTime);
     setCurrent(safeTime);
+    if (emitSeek) emitSeek(safeTime);
   };
 
   const handleSeek = (e) => {
@@ -981,7 +985,7 @@ export default function Player({ id, mode = "page", onClose }) {
                       <SkipForward className="h-4 w-4 sm:h-5 sm:w-5" />
                     </Button>
                   </div>
-                <div className="flex items-center gap-2 sm:gap-4 w-full justify-center">
+                <div className="flex items-center gap-2 sm:gap-4 w-full justify-center mt-4">
                     <Button
                       size="icon"
                       variant="ghost"
@@ -997,6 +1001,13 @@ export default function Player({ id, mode = "page", onClose }) {
                     <Button size="icon" variant="ghost" onClick={handleShare}>
                       <Share2 className="h-4 w-4" />
                     </Button>
+                    <Link 
+                      href="/together"
+                      className={`hidden sm:flex items-center justify-center rounded-md border bg-transparent h-9 px-3 gap-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground ${roomId ? "border-primary text-primary" : "border-input"}`}
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>{roomId ? "Listening Together" : "Listen Together"}</span>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -1009,10 +1020,6 @@ export default function Player({ id, mode = "page", onClose }) {
                   </div>
                 ) : lyricsLines.length > 0 ? (
                   <>
-                    <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
-                      <Users className="h-4 w-4" />
-                      <span className="font-semibold">Together</span>
-                    </div>
                     <div
                       ref={lyricsContainerRef}
                       className="mt-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1 lyrics-font"

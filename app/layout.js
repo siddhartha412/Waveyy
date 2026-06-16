@@ -7,6 +7,7 @@ import MobileMenu from "@/components/mobile-menu";
 import MusicProvider from "@/components/providers/music-provider";
 import NextProvider from "@/components/providers/next-provider";
 import AuthProvider from "@/components/providers/auth-provider";
+import RoomProvider from "@/components/providers/room-provider";
 import ServiceWorkerReset from "@/components/dev/sw-reset";
 
 const bricolage_grotesque = Bricolage_Grotesque({
@@ -49,7 +50,9 @@ export default function RootLayout({ children }) {
           />
           <AuthProvider>
             <NextProvider>
-              <MusicProvider>{children}</MusicProvider>
+              <MusicProvider>
+                <RoomProvider>{children}</RoomProvider>
+              </MusicProvider>
             </NextProvider>
           </AuthProvider>
           {/* <MobileMenu/> */}
