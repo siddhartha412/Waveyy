@@ -96,12 +96,26 @@ export default function RoomProvider({ children }) {
     const onSyncState = (state) => {
       console.log("Syncing state", state);
       const currentCtx = musicCtxRef.current;
-      if (state.music && currentCtx?.setMusic) currentCtx.setMusic(state.music);
-      if (state.currentTime !== undefined && currentCtx?.audioRef?.current) {
-        currentCtx.audioRef.current.currentTime = state.currentTime;
+      if (state.music && currentCtx?.setMusic) {
+        setLastReceivedSong(state.music);
+        currentCtx.setMusic(state.music);
+        currentCtx.setPlayerOpen?.(true);
       }
       if (state.playing && currentCtx?.setPlaying) {
         currentCtx.setPlaying(true);
+        currentCtx.setPlayRequested?.(true);
+      }
+      // Defer currentTime — audio source hasn't loaded yet after setMusic
+      if (state.currentTime !== undefined) {
+        const waitForAudio = () => {
+          const ctx = musicCtxRef.current;
+          if (ctx?.audioRef?.current && ctx.audioRef.current.readyState >= 1) {
+            ctx.audioRef.current.currentTime = state.currentTime;
+          } else {
+            setTimeout(waitForAudio, 200);
+          }
+        };
+        setTimeout(waitForAudio, 300);
       }
     };
 
@@ -111,6 +125,7 @@ export default function RoomProvider({ children }) {
          currentCtx.audioRef.current.currentTime = time;
       }
       if (currentCtx?.setPlaying) currentCtx.setPlaying(true);
+      currentCtx?.setPlayRequested?.(true);
     };
 
     const onPause = (time) => {
@@ -128,6 +143,8 @@ export default function RoomProvider({ children }) {
       const currentCtx = musicCtxRef.current;
       setLastReceivedSong(songId);
       if (currentCtx?.setMusic) currentCtx.setMusic(songId);
+      currentCtx?.setPlayerOpen?.(true);
+      currentCtx?.setPlayRequested?.(true);
     };
 
     const onHostStatus = (status) => {
@@ -145,6 +162,18 @@ export default function RoomProvider({ children }) {
       }
     };
 
+    const onRequestSync = () => {
+      // Another user is requesting sync from us (we are the host)
+      const currentCtx = musicCtxRef.current;
+      if (currentCtx?.music) {
+        socket.emit("sync-state", roomId, {
+          music: currentCtx.music,
+          playing: currentCtx.playing,
+          currentTime: currentCtx.audioRef?.current?.currentTime || 0
+        });
+      }
+    };
+
     socket.on("user-joined", onUserJoined);
     socket.on("room-users-update", onRoomUsersUpdate);
     socket.on("sync-state", onSyncState);
@@ -154,6 +183,10 @@ export default function RoomProvider({ children }) {
     socket.on("change-song", onChangeSong);
     socket.on("host-status", onHostStatus);
     socket.on("sync-time", onSyncTime);
+    socket.on("request-sync", onRequestSync);
+
+    // After all listeners are registered, request sync from the host
+    socket.emit("request-sync", roomId);
 
     return () => {
       socket.off("user-joined", onUserJoined);
@@ -165,6 +198,7 @@ export default function RoomProvider({ children }) {
       socket.off("change-song", onChangeSong);
       socket.off("host-status", onHostStatus);
       socket.off("sync-time", onSyncTime);
+      socket.off("request-sync", onRequestSync);
     };
   }, [socket, roomId]);
 

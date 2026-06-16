@@ -75,6 +75,10 @@ app.prepare().then(() => {
       socket.to(roomId).emit("change-song", songId);
     });
 
+    socket.on("request-sync", (roomId) => {
+      socket.to(roomId).emit("request-sync");
+    });
+
     socket.on("disconnect", () => {
       console.log(`User disconnected: ${socket.id}`);
       
