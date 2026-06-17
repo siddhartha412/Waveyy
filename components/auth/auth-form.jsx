@@ -214,6 +214,15 @@ export default function AuthForm({ mode }) {
           Continue with Discord
         </Button>
 
+        <Button
+          type="button"
+          variant="secondary"
+          className="w-full mt-4"
+          onClick={() => router.push("/")}
+        >
+          Continue as Guest
+        </Button>
+
         <p className="mt-4 text-sm text-muted-foreground">
           {isLogin ? "No account yet?" : "Already have an account?"}{" "}
           {isLogin ? (

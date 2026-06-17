@@ -183,7 +183,7 @@ export default function MusicProvider({ children }) {
   }, [user?.id, playlistBackendMissing, refreshPlaylists]);
 
   const createPlaylist = async (name = "My Playlist") => {
-    if (!user?.id) return { data: null, error: new Error("Please login first") };
+    if (!user?.id) return { data: null, error: new Error("Guest cannot perform this action") };
     if (playlistBackendMissing) {
       const { ok, error } = await refreshPlaylists();
       if (!ok && isMissingPlaylistTableError(error)) {
@@ -222,7 +222,7 @@ export default function MusicProvider({ children }) {
   };
 
   const deletePlaylist = async (playlistId) => {
-    if (!user?.id) return { error: new Error("Please login first") };
+    if (!user?.id) return { error: new Error("Guest cannot perform this action") };
     if (isLikedPlaylistId(playlistId, user.id)) {
       return { error: new Error("Liked Songs playlist cannot be deleted") };
     }
@@ -250,7 +250,7 @@ export default function MusicProvider({ children }) {
   };
 
   const ensureLikedPlaylist = useCallback(async () => {
-    if (!user?.id) return { data: null, error: new Error("Please login first") };
+    if (!user?.id) return { data: null, error: new Error("Guest cannot perform this action") };
     if (playlistBackendMissing) {
       const { ok, error } = await refreshPlaylists();
       if (!ok && isMissingPlaylistTableError(error)) {
@@ -283,7 +283,7 @@ export default function MusicProvider({ children }) {
   }, [playlists, playlistBackendMissing, refreshPlaylists, user?.id]);
 
   const addSongToPlaylist = async (playlistId, song) => {
-    if (!user?.id) return { error: new Error("Please login first") };
+    if (!user?.id) return { error: new Error("Guest cannot perform this action") };
     if (!playlistId || !song?.id) return { error: new Error("Invalid song or playlist") };
     if (playlistBackendMissing) {
       const { ok, error } = await refreshPlaylists();
@@ -330,7 +330,7 @@ export default function MusicProvider({ children }) {
   };
 
   const removeSongFromLiked = async (songId) => {
-    if (!user?.id) return { error: new Error("Please login first") };
+    if (!user?.id) return { error: new Error("Guest cannot perform this action") };
     if (!songId) return { error: new Error("Invalid song") };
     const likedId = getLikedPlaylistId(user.id);
     if (!likedId) return { error: new Error("Liked Songs not found") };
@@ -358,7 +358,7 @@ export default function MusicProvider({ children }) {
   };
 
   const removeSongFromPlaylist = async (playlistId, songId) => {
-    if (!user?.id) return { error: new Error("Please login first") };
+    if (!user?.id) return { error: new Error("Guest cannot perform this action") };
     if (playlistBackendMissing) {
       const { ok, error } = await refreshPlaylists();
       if (!ok && isMissingPlaylistTableError(error)) {
