@@ -28,8 +28,9 @@ export default function RootLayout({ children }) {
       <body className={bricolage_grotesque.className}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
+          forcedTheme="dark"
+          enableSystem={false}
           disableTransitionOnChange
         >
           <ServiceWorkerReset />

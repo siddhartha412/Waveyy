@@ -76,11 +76,7 @@ export default function RootLayout({ children }) {
         if (loading) return;
         if (user) return;
 
-        const isMobile = window.matchMedia("(max-width: 767px)").matches;
-        if (!isMobile) return;
-        if (isAuthPage) return;
-
-        router.replace("/login");
+        // Allowing guests on mobile, no redirect needed here
     }, [loading, user, isAuthPage, router]);
 
     return (
