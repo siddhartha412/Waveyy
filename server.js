@@ -13,7 +13,12 @@ const handler = app.getRequestHandler();
 app.prepare().then(() => {
   const httpServer = createServer(handler);
 
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "*", // In production, replace with your Vercel URL for better security
+      methods: ["GET", "POST"],
+    },
+  });
 
   const roomHosts = {};
   const roomUsers = {};

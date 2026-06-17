@@ -7,11 +7,15 @@ export function useSocket() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    // Only connect on the client side
-    const socketInstance = io();
+    // Connect to the external socket server if configured, otherwise use current origin
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    const socketInstance = io(socketUrl, {
+      path: "/socket.io",
+      transports: ["websocket", "polling"],
+    });
 
     socketInstance.on("connect", () => {
-      console.log("Connected to socket server");
+      console.log("Connected to socket server:", socketUrl);
     });
 
     socketInstance.on("disconnect", () => {

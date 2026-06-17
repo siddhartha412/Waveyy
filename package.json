@@ -6,6 +6,7 @@
     "dev": "node server.js",
     "build": "next build --webpack",
     "start": "NODE_ENV=production node server.js",
+    "socket": "node socket.js",
     "lint": "eslint .",
     "rpc:discord": "node scripts/discord-rpc.cjs"
   },
