@@ -391,10 +391,14 @@ export default function Player({ rightSidebarOpen = true, onToggleRightSidebar =
     if (!("mediaSession" in navigator)) return;
 
     try {
+      const cleanTitle = decodeHTML(data.name || "Unknown").replace(
+        /\s*\(from\s+[""'"](.+)[""'"]\)\s*$/i,
+        ""
+      );
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: data.name || "Unknown",
-        artist: data.artists?.primary?.[0]?.name || "Unknown",
-        album: data.album?.name || "",
+        title: cleanTitle,
+        artist: decodeHTML(data.artists?.primary?.[0]?.name || "Unknown"),
+        album: decodeHTML(data.album?.name || ""),
         artwork: [
           { src: data.image?.[0]?.url, sizes: "96x96", type: "image/jpeg" },
           { src: data.image?.[1]?.url, sizes: "192x192", type: "image/jpeg" },

@@ -114,8 +114,12 @@ export default function Player({ id }) {
   // MediaSession API implementation
   useEffect(() => {
     if ("mediaSession" in navigator && data?.name) {
+      const cleanTitle = decodeHTML(data.name || "").replace(
+        /\s*\(from\s+[""'"](.+)[""'"]\)\s*$/i,
+        ""
+      );
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: decodeHTML(data.name || ""),
+        title: cleanTitle,
         artist: decodeHTML(data.artists?.primary?.[0]?.name || ""),
         album: decodeHTML(data.album?.name || "Waveyy"),
         artwork: [
