@@ -26,6 +26,7 @@ import { toast } from "sonner";
 import { usePathname } from "next/navigation";
 import AdaptiveImage from "../ui/adaptive-image";
 import { selectBestAudioUrl } from "@/lib/audio-quality";
+import LikeSongButton from "@/components/playlists/like-song-button";
 
 export default function Player({ rightSidebarOpen = true, onToggleRightSidebar = () => {} }) {
   const [mounted, setMounted] = useState(false);
