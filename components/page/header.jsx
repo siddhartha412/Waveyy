@@ -40,7 +40,7 @@ export default function Header({ sidebarOpen = true }) {
 
   return (
     <header
-      className={`sticky top-0 relative z-[120] border-b border-border/60 bg-secondary/20 backdrop-blur-[40px] saturate-[180%] px-4 py-3 sm:px-5 lg:h-[64px] lg:py-0 lg:flex lg:items-center rounded-b-2xl mx-4`}
+      className={`sticky top-0 relative z-[120] border-b border-border/60 bg-secondary/20 backdrop-blur-[40px] saturate-[180%] px-4 pt-5 pb-3 sm:px-5 lg:h-[64px] lg:py-0 lg:flex lg:items-center rounded-b-2xl mx-4`}
     >
       <div className="flex w-full items-center gap-3 sm:grid sm:grid-cols-[auto_minmax(320px,620px)_auto] sm:items-center lg:flex lg:items-center lg:h-full">
         <div className="shrink-0 sm:justify-self-start">

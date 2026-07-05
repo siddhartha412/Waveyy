@@ -25,7 +25,7 @@ export default function MobileBottomNav() {
 
   return (
     <nav className="waveyy-mobile-bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-background/95 backdrop-blur-md">
-      <div className={`grid h-14 ${visibleItems.length === 1 ? "grid-cols-1" : visibleItems.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
+      <div className={`grid h-16 ${visibleItems.length === 1 ? "grid-cols-1" : visibleItems.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
         {visibleItems.map((item) => {
           const Icon = item.icon;
           const active =
@@ -36,7 +36,7 @@ export default function MobileBottomNav() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center justify-center gap-0.5 text-xs ${
+              className={`flex flex-col items-center justify-center gap-1 pt-1 text-xs ${
                 active ? "text-foreground" : "text-muted-foreground"
               }`}
             >
