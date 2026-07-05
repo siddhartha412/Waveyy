@@ -3,6 +3,7 @@
 import { ListMusic, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
 import { decodeHTML } from "@/lib/decode-html";
 import { cn } from "@/lib/utils";
@@ -109,7 +110,7 @@ export default function QueueList({ compact = false, className = "" }) {
                   className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/60 px-2.5 py-2"
                 >
                   {image ? (
-                    <img src={image} alt="" className="h-10 w-10 rounded-md object-cover" />
+                    <AdaptiveImage src={image} alt="" className="h-10 w-10 rounded-md object-cover" />
                   ) : (
                     <div className="h-10 w-10 rounded-md bg-secondary/60" />
                   )}

@@ -5,6 +5,7 @@ import { useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft, Heart, Play, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 import { useMusicProvider, useNextMusicProvider } from "@/hooks/use-context";
 import { useAuth } from "@/hooks/use-auth";
 import { requireAuthToPlay } from "@/lib/auth-gate";
@@ -226,7 +227,7 @@ export default function PlaylistDetailPage() {
                     className="flex items-center gap-3 min-w-0 text-left"
                     title={song.name}
                   >
-                    <img
+                    <AdaptiveImage
                       src={song.image}
                       alt={song.name}
                       className="h-10 w-10 rounded object-cover shrink-0 bg-secondary/70"

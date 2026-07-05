@@ -6,6 +6,7 @@ import { requireAuthToPlay } from "@/lib/auth-gate";
 import { decodeHTML } from "@/lib/decode-html";
 import { formatPlayCount } from "@/lib/utils";
 import { IoPlay } from "react-icons/io5";
+import AdaptiveImage from "../ui/adaptive-image";
 
 export default function ArtistPodium({ songs }) {
     const { setMusic, setPlayRequested } = useMusicProvider();
@@ -34,7 +35,7 @@ export default function ArtistPodium({ songs }) {
                             className="relative mb-2 cursor-pointer group"
                             onClick={() => playSong(song.id)}
                         >
-                            <img
+                            <AdaptiveImage
                                 src={song.image?.[2]?.url || song.image?.[1]?.url}
                                 alt={song.name}
                                 className={`${img} rounded-full object-cover border-2 border-border/60 transition-transform duration-200 group-hover:scale-105`}

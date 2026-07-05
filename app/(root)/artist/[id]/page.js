@@ -1,6 +1,7 @@
 import { getArtistById } from "@/lib/fetch";
 import SongCard from "@/components/cards/song";
 import AlbumCard from "@/components/cards/album";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import ArtistProfileCard from "@/components/artist/artist-profile-card";
 import ArtistFeaturedCard from "@/components/artist/artist-featured-card";
@@ -46,7 +47,7 @@ export default async function ArtistPage({ params }) {
                 </div>
                 <div className="px-4 -mt-16 relative z-10">
                     <div className={`${cardClass} flex flex-col items-center text-center`}>
-                        <img
+                        <AdaptiveImage
                             src={artistImage}
                             alt={data.name}
                             className="h-[140px] w-[140px] rounded-full shadow-2xl object-cover border-4 border-background shrink-0"
@@ -102,7 +103,7 @@ export default async function ArtistPage({ params }) {
                             ].map(({ idx, song, h, img, badge }) => (
                                 <div key={song.id} className="flex flex-col items-center flex-1">
                                     <div className="relative mb-2">
-                                        <img
+                                        <AdaptiveImage
                                             src={song.image?.[2]?.url || song.image?.[1]?.url}
                                             alt={song.name}
                                             className={`${img} rounded-full object-cover border-2 border-border/60`}

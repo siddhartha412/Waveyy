@@ -21,11 +21,12 @@ export default function RootLayout({ children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
 
-    const sidebarPadding = sidebarOpen
-        ? "lg:pl-[282px]"
-        : "lg:pl-[100px]";
-    const rightPlayerPadding = music && isDesktop
-        ? rightSidebarOpen ? "lg:pr-[392px]" : "lg:pr-[100px]"
+    const sidebarPaddingClass = sidebarOpen
+        ? "sidebar-padding-open"
+        : "sidebar-padding-closed";
+
+    const rightPlayerPaddingClass = music
+        ? (rightSidebarOpen ? "right-player-padding-open" : "right-player-padding-closed")
         : "";
 
     const { user, loading } = useAuth();
@@ -88,7 +89,7 @@ export default function RootLayout({ children }) {
             <div
                 className={
                     !isAuthPage
-                        ? `${rightPlayerPadding} ${sidebarPadding} pb-24 lg:pb-0`
+                        ? `layout-padding ${rightPlayerPaddingClass} ${sidebarPaddingClass} pb-24 lg:pb-0`
                         : undefined
                 }
             >

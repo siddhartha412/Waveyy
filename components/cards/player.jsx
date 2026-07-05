@@ -24,7 +24,7 @@ import { decodeHTML } from "@/lib/decode-html";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { toast } from "sonner";
 import { usePathname } from "next/navigation";
-import LikeSongButton from "@/components/playlists/like-song-button";
+import AdaptiveImage from "../ui/adaptive-image";
 import { selectBestAudioUrl } from "@/lib/audio-quality";
 
 export default function Player({ rightSidebarOpen = true, onToggleRightSidebar = () => {} }) {
@@ -438,6 +438,11 @@ export default function Player({ rightSidebarOpen = true, onToggleRightSidebar =
   }, [data, audioURL]);
 
   useEffect(() => {
+    if (typeof window === "undefined" || !("mediaSession" in navigator)) return;
+    navigator.mediaSession.playbackState = playing ? "playing" : "paused";
+  }, [playing]);
+
+  useEffect(() => {
     const onKeyDown = (e) => {
       if (e.defaultPrevented) return;
       const isSpace = e.code === "Space" || e.key === " ";
@@ -525,7 +530,7 @@ export default function Player({ rightSidebarOpen = true, onToggleRightSidebar =
             {data ? (
               <>
                 <div className="relative group shrink-0">
-                  <img
+                  <AdaptiveImage
                     src={data.image?.[1]?.url}
                     className="h-12 w-12 sm:h-14 sm:w-14 rounded-lg object-cover shadow-md group-hover:opacity-80 transition cursor-pointer"
                     onClick={() => setPlayerOpen(true)}

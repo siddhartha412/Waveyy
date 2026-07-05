@@ -2,6 +2,7 @@
 import AlbumCard from "@/components/cards/album";
 import ArtistCard from "@/components/cards/artist";
 import SongCard from "@/components/cards/song";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getSongsByQuery, searchAlbumByQuery, searchYouTubeMusicQuery } from "@/lib/fetch";
@@ -175,7 +176,7 @@ export default function Search({ params }) {
                             href={`/artist/${topArtist.artist.id}`}
                             className="group w-fit flex items-center gap-3 rounded-xl border border-border/60 bg-secondary/20 px-3 py-2 hover:bg-secondary/40 transition-colors"
                         >
-                            <img
+                            <AdaptiveImage
                                 src={topArtist.artist.image?.[2]?.url || `https://az-avatar.vercel.app/api/avatar/?bgColor=0f0f0f0&fontSize=60&text=${topArtist.artist?.name?.charAt(0).toUpperCase() || "U"}`}
                                 alt={topArtist.artist.name || "unknown"}
                                 className="h-14 w-14 rounded-full object-cover"

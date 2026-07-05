@@ -2,7 +2,7 @@ import Link from "next/link";
 import { decodeHTML } from "@/lib/decode-html";
 import AdaptiveImage from "@/components/ui/adaptive-image";
 
-export default function ArtistCard({ image, name, id }) {
+export default function ArtistCard({ image, name, id, priority = false }) {
     const safeName = decodeHTML(name || "");
     return (
         <Link href={`/artist/${id}`} className="group block w-fit">
@@ -12,6 +12,9 @@ export default function ArtistCard({ image, name, id }) {
                         src={image}
                         alt={safeName}
                         className="group-hover:scale-[1.03] transition-all duration-300 ease-smooth cursor-pointer rounded-full h-full w-full object-cover"
+                        width={180}
+                        height={180}
+                        priority={priority}
                     />
                 ) : (
                     <div className="h-full w-full rounded-full animate-pulse bg-secondary" />

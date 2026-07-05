@@ -32,9 +32,7 @@
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
   }
-}
 
-@layer base {
   * {
     @apply border-border;
   }
@@ -122,5 +120,47 @@
 
   .lyrics-font {
     font-family: 'Baloo Bhai 2', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  /* Custom scrollbar for lyrics and specific containers */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px !important;
+    height: 0 !important;
+    display: block !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.3) !important;
+    border-radius: 10px !important;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.5) !important;
+  }
+  .custom-scrollbar {
+    scrollbar-width: thin !important;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent !important;
+    -ms-overflow-style: auto !important;
+  }
+}
+
+@layer utilities {
+  .layout-padding {
+    transition: padding 0.3s ease;
+  }
+  @media (min-width: 1024px) {
+    .sidebar-padding-open {
+      padding-left: 282px;
+    }
+    .sidebar-padding-closed {
+      padding-left: 100px;
+    }
+    .right-player-padding-open {
+      padding-right: 392px;
+    }
+    .right-player-padding-closed {
+      padding-right: 100px;
+    }
   }
 }

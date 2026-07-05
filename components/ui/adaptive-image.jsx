@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { toSaavnJpgUrl, toWebpUrl } from "@/lib/image-url";
+import { toSaavnJpgUrl, toWebpUrl, resizeSaavnUrl } from "@/lib/image-url";
 
+/**
+ * Enhanced AdaptiveImage component with Lighthouse optimizations
+ * - Supports explicit width/height to prevent CLS
+ * - Supports fetchPriority and priority prop for LCP optimization
+ * - Handles WebP conversion and fallback gracefully
+ * - Supports JioSaavn image resizing
+ */
 export default function AdaptiveImage({
   src,
   alt = "",
@@ -10,9 +17,21 @@ export default function AdaptiveImage({
   fallbackSrc = "/favi-icon.jpg",
   loading = "lazy",
   decoding = "async",
+  width,
+  height,
+  priority = false,
+  fetchPriority = "auto",
+  size = "500x500",
+  onClick,
 }) {
-  const webpSrc = useMemo(() => toWebpUrl(src), [src]);
-  const saavnJpgSrc = useMemo(() => toSaavnJpgUrl(src), [src]);
+  const resizedSrc = useMemo(() => resizeSaavnUrl(src, size), [src, size]);
+  const webpSrc = useMemo(() => toWebpUrl(resizedSrc), [resizedSrc]);
+  const saavnJpgSrc = useMemo(() => toSaavnJpgUrl(resizedSrc), [resizedSrc]);
+  
+  // For LCP elements, we don't want to lazy load
+  const finalLoading = priority ? undefined : loading;
+  const finalFetchPriority = priority ? "high" : fetchPriority;
+
   const initial = webpSrc || src || fallbackSrc;
   const [currentSrc, setCurrentSrc] = useState(initial);
 
@@ -38,10 +57,14 @@ export default function AdaptiveImage({
     <img
       src={currentSrc}
       alt={alt}
-      loading={loading}
+      loading={finalLoading}
       decoding={decoding}
       onError={handleError}
       className={className}
+      width={width}
+      height={height}
+      fetchPriority={finalFetchPriority}
+      onClick={onClick}
     />
   );
 }

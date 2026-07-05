@@ -649,7 +649,7 @@ export default function Page() {
                     <SongCard key={`trend-skel-${i}`} />
                   ))
                 : trending.length > 0
-                  ? trending.map((song) => (
+                  ? trending.map((song, idx) => (
                       <SongCard
                         key={song.id}
                         id={song.id}
@@ -657,6 +657,7 @@ export default function Page() {
                         artist={toArtistLabel(song)}
                         title={song.name}
                         playCount={song.playCount}
+                        priority={idx < 4}
                       />
                     ))
                   : Array.from({ length: 6 }).map((_, i) => (
@@ -705,6 +706,7 @@ export default function Page() {
                         id={artist.id}
                         name={artist.name}
                         image={artist.image}
+                        priority={idx < 4}
                       />
                     </div>
                   ))}
@@ -752,6 +754,7 @@ export default function Page() {
                         title={album.name}
                         artist={album.artist}
                         image={album.image}
+                        priority={idx < 4}
                       />
                     </div>
                   ))}

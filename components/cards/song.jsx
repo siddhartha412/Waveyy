@@ -29,7 +29,7 @@ import {
 } from "@/lib/queue-utils";
 import { useMediaQuery } from "@/hooks/use-media-query";
 
-export default function SongCard({ title, image, artist, id, desc, playCount }) {
+export default function SongCard({ title, image, artist, id, desc, playCount, priority = false }) {
     const ids = useContext(MusicContext);
     const next = useNextMusicProvider();
     const { user } = useAuth();
@@ -208,8 +208,10 @@ export default function SongCard({ title, image, artist, id, desc, playCount }) 
                         <AdaptiveImage
                             src={image}
                             alt={safeTitle}
-                            className="blurz w-full bg-secondary/60 rounded-lg transition-all duration-300 ease-smooth hover:scale-[1.03] hover:surface-shadow-md cursor-pointer"
-                            style={{ height: "182px" }}
+                            className={`${!priority ? "blurz" : ""} w-full bg-secondary/60 rounded-lg transition-all duration-300 ease-smooth hover:scale-[1.03] hover:surface-shadow-md cursor-pointer`}
+                            width={198}
+                            height={198}
+                            priority={priority}
                         />
                         <div className="absolute inset-0 rounded-lg bg-black/20 opacity-0 transition-opacity duration-200 group-hover:opacity-100" />
                         <div className="pointer-events-none absolute z-10 bottom-2 left-2 bg-background/70 backdrop-blur-[40px] rounded-full h-8 w-8 flex items-center justify-center opacity-0 scale-90 transition-all duration-200 ease-spring group-hover:opacity-100 group-hover:scale-100">

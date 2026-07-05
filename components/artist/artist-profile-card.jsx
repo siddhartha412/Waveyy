@@ -4,6 +4,7 @@ import { useState } from "react";
 import { decodeHTML } from "@/lib/decode-html";
 import { capitalizeWords, formatPlayCount } from "@/lib/utils";
 import { Users, CheckCircle, ArrowLeftRight } from "lucide-react";
+import AdaptiveImage from "../ui/adaptive-image";
 
 export default function ArtistProfileCard({
     artistImage,
@@ -40,7 +41,7 @@ export default function ArtistProfileCard({
                         }}
                     >
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-md" />
-                        <img
+                        <AdaptiveImage
                             src={artistImage}
                             alt={name}
                             className="relative h-[125px] w-[125px] rounded-full shadow-2xl object-cover border-4 border-background z-10"

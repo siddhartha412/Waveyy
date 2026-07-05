@@ -4,7 +4,7 @@ import { Badge } from "../ui/badge";
 import { decodeHTML } from "@/lib/decode-html";
 import AdaptiveImage from "@/components/ui/adaptive-image";
 
-export default function AlbumCard({ title, image, artist, id, desc, lang }) {
+export default function AlbumCard({ title, image, artist, id, desc, lang, priority = false }) {
     const safeTitle = decodeHTML(title || "");
     const safeArtist = decodeHTML(artist || "");
     const safeDesc = decodeHTML(desc || "");
@@ -16,12 +16,14 @@ export default function AlbumCard({ title, image, artist, id, desc, lang }) {
                         <AdaptiveImage
                             src={image}
                             alt={safeTitle}
-                            className="w-full bg-secondary/60 rounded-lg transition-all duration-300 ease-smooth hover:scale-[1.03] hover:surface-shadow-md cursor-pointer"
-                            style={{ height: "182px" }}
+                            className={`${!priority ? "blurz" : ""} w-full bg-secondary/60 rounded-lg transition-all duration-300 ease-smooth hover:scale-[1.03] hover:surface-shadow-md cursor-pointer`}
+                            width={198}
+                            height={198}
+                            priority={priority}
                         />
                     </Link>
                 ) : (
-                    <Skeleton className="w-full" style={{ height: "182px" }} />
+                    <Skeleton className="w-full h-[182px]" />
                 )}
             </div>
             <div className="cursor-pointer">

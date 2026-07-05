@@ -33,6 +33,7 @@ import LikeSongButton from "@/components/playlists/like-song-button";
 import { selectBestAudioUrl } from "@/lib/audio-quality";
 import QueueList from "@/components/player/queue-list";
 import { useRoom } from "@/components/providers/room-provider";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 
 export default function Player({ id, mode = "page", onClose }) {
   // start with an object so checks are straightforward
@@ -551,7 +552,7 @@ export default function Player({ id, mode = "page", onClose }) {
     if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
     scrollTimeoutRef.current = setTimeout(() => {
       setIsUserScrolling(false);
-    }, 2000);
+    }, 4000);
   };
 
   // === Spacebar play/pause handler ===
@@ -601,7 +602,7 @@ export default function Player({ id, mode = "page", onClose }) {
     const sliderTime = isSeeking ? seekPreviewTime : currentTime;
     return (
       <div className="relative h-[100vh] w-[100vw] overflow-hidden bg-black text-white">
-        <img
+        <AdaptiveImage
           src={data?.image?.[2]?.url || data?.image?.[1]?.url || data?.image?.[0]?.url}
           alt=""
           className="absolute inset-0 h-full w-full object-cover opacity-40 scale-105"
@@ -678,7 +679,7 @@ export default function Player({ id, mode = "page", onClose }) {
 
             <div className="grid gap-6 w-full max-w-none">
               <div className="flex items-center gap-4">
-                <img
+                <AdaptiveImage
                   src={data?.image?.[1]?.url || data?.image?.[0]?.url}
                   alt={decodeHTML(data?.name || "")}
                   className="h-16 w-16 rounded-lg object-cover shadow-xl"
@@ -822,12 +823,12 @@ export default function Player({ id, mode = "page", onClose }) {
               <Skeleton className="w-full aspect-square rounded-2xl" />
             ) : (
               <div className="relative w-full">
-                <img
+                <AdaptiveImage
                   src={data.image?.[2]?.url}
                   className="w-full aspect-square bg-secondary/50 rounded-2xl object-contain"
                   alt={decodeHTML(data.name)}
                 />
-                <img
+                <AdaptiveImage
                   src={data.image?.[2]?.url}
                   className="hidden dark:block absolute top-0 left-0 w-[110%] h-[110%] blur-3xl -z-10 opacity-50 pointer-events-none"
                   alt=""
@@ -1044,8 +1045,7 @@ export default function Player({ id, mode = "page", onClose }) {
                       ref={lyricsContainerRef}
                       onWheel={handleUserScroll}
                       onTouchMove={handleUserScroll}
-                      className="mt-3 max-h-64 sm:max-h-80 overflow-y-auto pr-1 lyrics-font relative"
-                      style={{ scrollbarWidth: "none" }}
+                      className="mt-3 max-h-[400px] sm:max-h-[500px] overflow-y-auto pr-2 lyrics-font relative custom-scrollbar"
                     >
                       <div className="py-16">
                         {lyricsLines.map((line, idx) => (

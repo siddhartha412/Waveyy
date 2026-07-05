@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { requireAuthToPlay } from "@/lib/auth-gate";
 import { decodeHTML } from "@/lib/decode-html";
 import { IoPlay } from "react-icons/io5";
+import AdaptiveImage from "../ui/adaptive-image";
 
 export default function ArtistFeaturedCard({ song, artistName }) {
   const { setMusic, setPlayRequested } = useMusicProvider();
@@ -39,7 +40,7 @@ export default function ArtistFeaturedCard({ song, artistName }) {
         <div className="absolute inset-0 bg-black/35 backdrop-blur-md" />
 
         {songImage && (
-          <img
+          <AdaptiveImage
             src={songImage}
             alt={songName}
             className="relative z-10 h-[125px] w-[125px] rounded-lg object-cover shadow-2xl border border-white/10"

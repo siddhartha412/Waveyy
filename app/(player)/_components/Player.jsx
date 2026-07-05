@@ -15,6 +15,7 @@ import {
 } from "@/hooks/use-context";
 import Next from "@/components/cards/next";
 import { IoPause } from "react-icons/io5";
+import AdaptiveImage from "@/components/ui/adaptive-image";
 import { decodeHTML } from "@/lib/decode-html";
 import { selectBestAudioUrl } from "@/lib/audio-quality";
 
@@ -158,11 +159,11 @@ export default function Player({ id }) {
               <Skeleton className="md:w-[130px] aspect-square rounded-2xl md:h-[150px]" />
             ) : (
               <div className="relative">
-                <img
+                <AdaptiveImage
                   src={data.image[2].url}
                   className="sm:h-[150px] h-full aspect-square bg-secondary/50 rounded-2xl sm:w-[200px] w-full sm:mx-0 mx-auto object-cover"
                 />
-                <img
+                <AdaptiveImage
                   src={data.image[2].url}
                   className="hidden dark:block absolute top-0 left-0 w-[110%] h-[110%] blur-3xl -z-10 opacity-50"
                 />

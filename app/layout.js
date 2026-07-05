@@ -25,6 +25,14 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
+      <head>
+        <link rel="preconnect" href="https://c.saavncdn.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://c.saavncdn.com" />
+        <meta name="theme-color" content="#000000" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+      </head>
       <body className={bricolage_grotesque.className}>
         <ThemeProvider
           attribute="class"
